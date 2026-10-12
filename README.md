@@ -358,3 +358,4 @@ The full history is in [CHANGELOG.md](CHANGELOG.md).
 
 Third-party licences: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 Released under **AGPL-3.0**. See [LICENSE](LICENSE).
+---
