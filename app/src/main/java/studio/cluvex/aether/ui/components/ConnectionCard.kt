@@ -16,6 +16,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -58,6 +59,8 @@ import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.rememberTextMeasurer
+import studio.cluvex.aether.custom.CustomSession
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -479,6 +482,13 @@ private fun MetaSlides(connected: Boolean, backend: TransportBackend) {
     // session to describe, so the row stays a dash rather than naming a pipeline
     // that is not running.
     val pipeline = if (connected) backend.pipelineLabel(meta.protocol) else dash
+    // 1.5.0 custom configs: a custom session shows its whole chain instead -
+    // "VLESS → Aether(WireGuard)", "Npvt → Psiphon", "Aether → Psiphon → Trojan" -
+    // with shorter forms of the same chain for a row too narrow for the full one.
+    val customInfo by CustomSession.info.collectAsState()
+    val pipelineForms = customInfo?.takeIf { connected }
+        ?.let { it.mode.compactLabels(it.configLabel, meta.protocol) }
+        ?: listOf(pipeline)
     val latency = when {
         !connected -> dash
         lastMs >= 0L -> "$lastMs ms"
@@ -492,7 +502,8 @@ private fun MetaSlides(connected: Boolean, backend: TransportBackend) {
     ) {
         MetaSlide(
             label = stringResource(R.string.meta_pipeline),
-            value = pipeline,
+            value = pipelineForms.first(),
+            forms = pipelineForms,
         )
         // r4: the Endpoint slide is gone. The engine's gateway address told the
         // user nothing they could act on (it is picked and rotated by the scan),
@@ -514,7 +525,22 @@ private fun MetaSlide(
     label: String,
     value: String,
     below: (@Composable () -> Unit)? = null,
+    /**
+     * 1.5.0: alternative, progressively shorter spellings of [value]. The first
+     * one that still fits the row at a comfortable size is shown; FitLineText
+     * then shrinks it further only if even the shortest one is too wide.
+     */
+    forms: List<String> = listOf(value),
 ) {
+    val valueStyle = MaterialTheme.typography.bodySmall.copy(
+        fontSize = 13.sp,
+        fontWeight = FontWeight.SemiBold,
+        fontFamily = FontFamily.Monospace,
+        textAlign = TextAlign.End,
+        // BiDi: a protocol name or an ip:port is LTR technical
+        // text even in the Persian UI.
+        textDirection = TextDirection.Ltr,
+    )
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -536,26 +562,36 @@ private fun MetaSlide(
             Spacer(Modifier.width(12.dp))
             // weight(1f) is what makes the value readable: it owns every pixel
             // the label does not, which is the whole point of the 1.2.7 slides.
+            BoxWithConstraints(modifier = Modifier.weight(1f)) {
+            val measurer = rememberTextMeasurer()
+            val maxPx = constraints.maxWidth
+            val chosen = remember(forms, maxPx, valueStyle) {
+                if (forms.size < 2) {
+                    value
+                } else {
+                    val comfortable = valueStyle.copy(fontSize = COMFORTABLE_VALUE_SP.sp)
+                    forms.firstOrNull { form ->
+                        measurer.measure(
+                            text = form,
+                            style = comfortable,
+                            maxLines = 1,
+                            softWrap = false,
+                        ).size.width <= maxPx
+                    } ?: forms.last()
+                }
+            }
             AnimatedContent(
-                targetState = value,
+                targetState = chosen,
                 transitionSpec = { fadeIn() togetherWith fadeOut() },
                 label = "metaValue",
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.fillMaxWidth(),
             ) { shown ->
                 // r2: ONE line at a fixed height. A long pipeline or an IPv6
                 // endpoint now shrinks its font instead of wrapping to a second
                 // line, because a second line resized the whole home screen.
                 FitLineText(
                     text = shown,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        fontFamily = FontFamily.Monospace,
-                        textAlign = TextAlign.End,
-                        // BiDi: a protocol name or an ip:port is LTR technical
-                        // text even in the Persian UI.
-                        textDirection = TextDirection.Ltr,
-                    ),
+                    style = valueStyle,
                     // 16 sp = bodySmall's line, the height this row always had.
                     minLineHeight = 16.sp,
                     color = CardTextPrimary,
@@ -563,6 +599,7 @@ private fun MetaSlide(
                     contentAlignment = Alignment.CenterEnd,
                     modifier = Modifier.fillMaxWidth(),
                 )
+            }
             }
         }
         if (below != null) {
@@ -890,6 +927,9 @@ private val DIVIDER = Color(0x1FFFFFFF)
 private val IDLE_ACCENT = Color(0xFF4C8DFF)
 private val ERROR_ACCENT = Color(0xFFFF5C7A)
 private const val LATENCY_REFRESH_MS = 4_000L
+
+/** 1.5.0: the smallest size a chain label is shown at before a shorter form of it is used. */
+private const val COMFORTABLE_VALUE_SP = 11
 
 // ---- ping meter tuning ----
 // 1.2.8-r4: the grade cut-offs and the bar-height ramp are declared together so

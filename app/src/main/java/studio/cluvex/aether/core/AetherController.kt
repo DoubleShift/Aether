@@ -11,6 +11,7 @@ import studio.cluvex.aether.model.ConnectionProfile
 import studio.cluvex.aether.model.CoreLogLevel
 import studio.cluvex.aether.model.ConnectionState
 import studio.cluvex.aether.model.EndpointMode
+import studio.cluvex.aether.model.GoolMode
 import studio.cluvex.aether.model.IpVersion
 import studio.cluvex.aether.model.Noize
 import studio.cluvex.aether.model.Protocol
@@ -130,6 +131,10 @@ object ProfileCodec {
         add("fDelay=${p.fragmentDelay}")
         add("noDataCheck=${p.noDataCheck}")
         add("tlsGroups=${p.tlsGroups}")
+        // Added in 1.5.0 (engine core 2.3.0)
+        add("tlsCiphers=${p.tlsCiphers}")
+        add("noGrease=${p.disableGrease}")
+        add("goolMode=${p.goolMode.name}")
         add("valSecs=${p.validateSecs}")
         add("recSecs=${p.reconnectSecs}")
         add("noProfRetry=${p.noProfileRetry}")
@@ -219,6 +224,9 @@ object ProfileCodec {
                 fragmentDelay = map["fDelay"] ?: d.fragmentDelay,
                 noDataCheck = map["noDataCheck"]?.toBooleanStrictOrNull() ?: d.noDataCheck,
                 tlsGroups = map["tlsGroups"] ?: d.tlsGroups,
+                tlsCiphers = map["tlsCiphers"] ?: d.tlsCiphers,
+                disableGrease = map["noGrease"]?.toBooleanStrictOrNull() ?: d.disableGrease,
+                goolMode = map["goolMode"]?.let { enumOr<GoolMode>(it) } ?: d.goolMode,
                 validateSecs = map["valSecs"]?.toIntOrNull() ?: d.validateSecs,
                 reconnectSecs = map["recSecs"]?.toIntOrNull() ?: d.reconnectSecs,
                 noProfileRetry = map["noProfRetry"]?.toBooleanStrictOrNull() ?: d.noProfileRetry,

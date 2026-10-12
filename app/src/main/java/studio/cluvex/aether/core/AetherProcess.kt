@@ -54,6 +54,20 @@ class AetherProcess(
             smartRoutes?.let { put("AETHER_ROUTES_FILE", it.absolutePath) }
             put("HOME", workingDir.absolutePath)
             put("TMPDIR", workingDir.absolutePath)
+            // ---- 1.5.0 ROOT-CAUSE FIX: the engine's own shared libraries --------
+            //
+            // Core 2.3.0 links BoringSSL (boring 5.2), which needs the NDK's C++
+            // runtime, libc++_shared.so. It is not an Android system library, so it
+            // ships in jniLibs next to libaether.so. A dlopen()ed library would find
+            // it through the app's linker namespace, but the engine is an
+            // EXECUTABLE: the dynamic linker searches only the system paths and
+            // LD_LIBRARY_PATH. Without this, every mode died before main() with
+            // `CANNOT LINK EXECUTABLE ... "libc++_shared.so" not found`.
+            put(
+                "LD_LIBRARY_PATH",
+                listOfNotNull(nativeLibDir, get("LD_LIBRARY_PATH")?.takeIf { it.isNotBlank() })
+                    .joinToString(":"),
+            )
             // ---- Tor (engine core 2.0.0) ---------------------------------
             //
             // Two paths the engine cannot work out for itself on Android, so they

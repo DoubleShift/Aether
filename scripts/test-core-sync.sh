@@ -9,8 +9,8 @@
 #
 # Scenarios covered:
 #   1. Upstream changes a patched file  -> three-way merge keeps BOTH sides.
-#   2. Upstream rewrites it beyond merge -> pure upstream is kept (compiles),
-#                                           and the run is flagged, not failed.
+#   2. Upstream rewrites it beyond merge -> upgrade is rejected, then rollback
+#                                           restores the app patch and old core.
 #   3. Downgrade / same version         -> no-op.
 #   4. Polluted merge baseline          -> the base is rebuilt from the app's
 #                                          AETHER-APP-PATCH markers and the
@@ -42,6 +42,11 @@ pub fn probe() {
         quiet: true,
     };
 }
+
+// Stable upstream tail keeps the additive patch outside the changed hunk.
+// The new fields above can merge without touching the app-only block.
+// Context line 3.
+// Context line 4.
 RS
 }
 
@@ -57,27 +62,20 @@ pub fn probe() {
         quiet: true,
     };
 }
+
+// Stable upstream tail keeps the additive patch outside the changed hunk.
+// The new fields above can merge without touching the app-only block.
+// Context line 3.
+// Context line 4.
 RS
 }
 
-# The app patch: an extra function appended by this repo (manual range mode).
+# The app patch must carry the same mandatory markers as the shipped engine:
+# sync-core.sh discovers patches by these markers and refuses an unmarked fixture.
 app_patch_marker="fn custom_cidrs_v4()"
-ours_v1() {
-  upstream_v1
-  cat <<'RS'
-
-/// APP PATCH: custom IPv4 scan ranges (AETHER_SCAN_CIDRS).
-fn custom_cidrs_v4() -> Option<Vec<String>> {
-    std::env::var("AETHER_SCAN_CIDRS").ok()
-}
-RS
-}
-
-# 1.2.6: the same patch, wrapped in the markers the real engine patches use.
 ours_marked() {
   upstream_v1
   cat <<'RS'
-
 // >>> AETHER-APP-PATCH manual-range
 /// APP PATCH: custom IPv4 scan ranges (AETHER_SCAN_CIDRS).
 fn custom_cidrs_v4() -> Option<Vec<String>> {
@@ -113,12 +111,9 @@ make_app_repo() {
   rm -rf "$app"
   mkdir -p "$app/native/aether/aether/src" "$app/scripts" "$app/app/src/main/java"
   cp "$SCRIPT" "$app/scripts/sync-core.sh"
+  cp "$(dirname "$SCRIPT")/core-rollback.sh" "$app/scripts/core-rollback.sh"
   echo "1.4" > "$app/native/aether/CORE_VERSION"
-  if [[ "${1:-plain}" == "marked" ]]; then
-    ours_marked > "$app/native/aether/aether/src/prober.rs"
-  else
-    ours_v1 > "$app/native/aether/aether/src/prober.rs"
-  fi
+  ours_marked > "$app/native/aether/aether/src/prober.rs"
   echo "fn wg() {}" > "$app/native/aether/aether/src/wg_prober.rs"
   printf '## v1.2.2\n<!-- core-sync:en -->\n' > "$app/README.md"
   printf '## v1.2.2\n<!-- core-sync:fa -->\n' > "$app/README.fa.md"
@@ -185,13 +180,22 @@ git -C "$wt" add -A
 git -C "$wt" commit -qm rewrite
 git -C "$wt" tag -f 1.6 >/dev/null
 git -C "$wt" push -q --tags --force origin HEAD:refs/heads/rewritten
-out2="$(run_sync "$APP2" 1.6)"
+if out2="$(run_sync "$APP2" 1.6)"; then r=no; else r=yes; fi
 echo "$out2" | sed 's/^/      /'
+check "rejects an upgrade that would drop the app patch" "$r"
+echo "$out2" | grep -q 'Refusing to ship a core upgrade' && r=yes || r=no
+check "reports why the upgrade was rejected" "$r"
+[[ -d "$APP2/native/.core-prev/aether" ]] && r=yes || r=no
+check "previous core is available for rollback" "$r"
+( cd "$APP2" && bash scripts/core-rollback.sh ) > "$TMP/rollback.log" 2>&1 && r=yes || r=no
+check "rollback succeeds after a rejected upgrade" "$r"
 res2="$APP2/native/aether/aether/src/prober.rs"
-grep -q '<<<<<<<' "$res2" && r=no || r=yes
-check "never leaves conflict markers in a shipped source file" "$r"
-grep -q 'totally_rewritten' "$res2" && r=yes || r=no
-check "falls back to the compilable upstream file" "$r"
+grep -qF "$app_patch_marker" "$res2" && r=yes || r=no
+check "rollback preserves the app patch" "$r"
+[[ "$(tr -d '[:space:]' < "$APP2/native/aether/CORE_VERSION")" == "1.4" ]] && r=yes || r=no
+check "rollback retains the previous core version" "$r"
+grep -q '<<<<<<<\|>>>>>>>' "$res2" && r=no || r=yes
+check "rollback contains no conflict markers" "$r"
 
 # ------------------------------------------------------------ 3. no-op path
 echo
@@ -208,7 +212,7 @@ check "vendored core left untouched" "$r"
 echo
 echo "[4] the cached baseline is the PATCHED file (the bug shipped in 1.2.5)"
 make_upstream_repo "$TMP/upstream" upstream_v2
-APP4="$(make_app_repo marked)"
+APP4="$(make_app_repo)"
 # Reproduce the pollution exactly: baseline = our patched file, not upstream's.
 mkdir -p "$APP4/native/aether/.upstream-baseline/aether/src"
 cp "$APP4/native/aether/aether/src/prober.rs" \

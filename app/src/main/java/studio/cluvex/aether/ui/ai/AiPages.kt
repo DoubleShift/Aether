@@ -151,7 +151,10 @@ fun AiSettingsPage(
                                 } else {
                                     Icons.Rounded.Visibility
                                 },
-                                contentDescription = null,
+                                contentDescription = stringResource(
+                                    if (reveal) R.string.a11y_hide_password
+                                    else R.string.a11y_show_password,
+                                ),
                                 modifier = Modifier.size(16.dp),
                             )
                             Spacer(Modifier.width(6.dp))

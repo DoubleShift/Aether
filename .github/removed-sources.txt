@@ -75,3 +75,8 @@ app/src/main/java/studio/cluvex/aether/ui/components/DropdownSelector.kt
 app/libs/psiphontunnel-2.0.39.aar
 app/libs/PROVENANCE.md
 app/src/main/java/studio/cluvex/aether/transport/PsiphonHealth.kt
+
+# --- upstream core 2.3.0 (app 1.5.0) renamed the WARP API front: apifront.rs
+#     became https.rs. A leftover apifront.rs is not compiled (lib.rs no longer
+#     declares it) but must not linger next to its replacement. ---
+native/aether/aether/src/apifront.rs

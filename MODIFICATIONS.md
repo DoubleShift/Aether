@@ -91,3 +91,17 @@
   `tor-only-psiphon-chain` (lets `--tor-only` carry the engine's Psiphon).
 - The Psiphon AAR was removed; Psiphon is the engine's (psiphon-tunnel-core
   console client, built from source by `native/aether/psiphon-build.sh`).
+
+
+## 1.5.0 additions (engine core 2.3.0)
+
+- Engine rebased onto core 2.3.0; details and hand resolutions (lib.rs, psiphon.rs, socks.rs, Cargo.lock) in `native/aether/.upstream-baseline/README.txt`.
+- `app/build.gradle.kts`: versionName 1.5.0, versionCode 18; `PATCHLEVEL` 1.5.0.
+- Tor over an upstream proxy: `native/aether/vendor/tor-chanmgr` (relay TLS without SNI when `AETHER_TOR_LINK_SNI=off`, set by `Profile.toEnv` whenever Tor has an upstream) and `native/aether/vendor/tor-dirclient` (20 s BEGIN_DIR / 20 s read-idle / 180 s total directory timeouts), both arti 0.46.0, wired in by the `tor-slow-chain` block in `native/aether/aether/Cargo.toml`. If a core upgrade moves arti off 0.46, cargo reports the patch as unused and the vendored copies must be refreshed.
+- `native/aether/aether/src/tor.rs` (`tor-cache-seed`): bootstrap attempts share a snapshot of the freshest directory cache.
+- `custom/XrayConfigBuilder.kt`: chain-level `uplinkOnly` 10 s / `downlinkOnly` 30 s.
+- Clipboard import: `ui/components/LtrInput.kt` (`replaceKey`), `ui/settings/CustomConfigsPage.kt`, `custom/ConfigParser.kt` (`cleanInput`, `extractLinks`), `custom/ConfigImporter.kt`.
+- `vpn/AetherVpnService.kt`: Psiphon-only start rethrows `CancellationException`.
+- Real delay test: new `custom/RealDelay.kt` (one Xray process per batch, password-protected loopback SOCKS inbound per config, HTTP `generate_204` through it); `custom/ConfigPing.kt` (TLS probe and trust-all `TrustManager` removed, `diagnose`, `NO_REPLY` / `INVALID`); `custom/ConfigPingStore.kt` (serialised runs, logged results); `custom/XrayConfigBuilder.kt` (`directOutbound`, `directDns`); `ui/settings/CustomConfigsPage.kt` and `res/values*/strings.xml` (`cc_ping_noreply`, `cc_ping_invalid`).
+- Security fixes from `docs/SECURITY_AUDIT_1.5.0.md`: `custom/XrayProcess.kt` (`redact` masks UUIDs, host names, IPv6, IPv4 /16), `custom/ConfigImporter.kt` + `vpn/AetherVpnService.kt` (`activeForwardPort`: subscription downloads through the session), *Copy link* via `copySensitive`.
+- Tests: `app/src/test/.../custom/RealDelayTest.kt` (incl. `XrayLogRedactionTest`).

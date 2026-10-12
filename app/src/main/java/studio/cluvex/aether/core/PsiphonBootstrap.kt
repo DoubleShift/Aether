@@ -1,9 +1,13 @@
 package studio.cluvex.aether.core
 
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.util.Base64
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
+import java.net.Inet4Address
 import java.security.KeyStore
 import java.security.cert.X509Certificate
 
@@ -40,6 +44,36 @@ import java.security.cert.X509Certificate
  *     patch `psiphon-embedded-servers` (psiphon.rs).
  *
  * `Tor -> Psiphon` runs the same Psiphon, so it shared both failures.
+ *
+ * ## 1.5.0-r2: the third gap - NO RESOLVER
+ *
+ * Field log, `Psiphon -> Npvt` and `Psiphon -> VLESS` (the two chains that put
+ * Psiphon FIRST, so it has to reach its network by itself):
+ *
+ * ```
+ * [-] psiphon: failed to fetch common remote server list: ... UntunneledResolveIP
+ *     ... lookup s3.amazonaws.com on [redacted]: read udp [...]: read: connection refused
+ * [-] psiphon: RoundTripperFailedError: ... lookup b-cdn.net on [redacted]: ...
+ *     read: connection refused
+ * [-] psiphon: DSL: doDiscoverServerEntriesRequest failed
+ * ```
+ *
+ * Not a block: `connection refused` is an ICMP port-unreachable, i.e. nothing was
+ * listening where Psiphon sent the query. `libpsiphon.so` is a static GOOS=linux
+ * binary and its resolver asks the servers Go finds in `/etc/resolv.conf` - a file
+ * Android does not have. With an empty list Go falls back to the loopback
+ * resolver, and the phone has none, so EVERY untunneled lookup is refused before
+ * it leaves the device: the remote server list, the in-proxy broker, the
+ * domain-fronted CDNs. Psiphon is left with nothing to dial and the engine exits.
+ *
+ * The REVERSE chains (`Npvt -> Psiphon`, `VLESS -> Psiphon`) always worked for the
+ * same reason: there Psiphon dials through the config's SOCKS5 listener, so the
+ * names are resolved at the far end of the tunnel and its own resolver is never
+ * used. That is the whole difference between the two directions.
+ *
+ * Fixed by handing Psiphon the resolvers of the network the phone is actually on
+ * (plus public fallbacks) through its config overlay, which is the one Psiphon
+ * setting this app owns. See [writeOverlay].
  */
 object PsiphonBootstrap {
 
@@ -72,9 +106,38 @@ object PsiphonBootstrap {
             .onFailure { DiagnosticsLog.w(TAG, "Could not export the system CA store for Psiphon: ${it.message}") }
         runCatching { copyServerList(context, File(dir, SERVER_LIST)) }
             .onFailure { DiagnosticsLog.w(TAG, "Could not stage Psiphon's embedded server list: ${it.message}") }
-        runCatching { writeOverlay(dir) }
+        val resolvers = resolvers(context)
+        runCatching { writeOverlay(dir, resolvers) }
             .onFailure { DiagnosticsLog.w(TAG, "Could not write Psiphon's config overlay: ${it.message}") }
+        DiagnosticsLog.i(TAG, "Psiphon resolvers for untunneled lookups: ${resolvers.joinToString(" ")}")
     }
+
+    /**
+     * The DNS servers Psiphon may use for its UNTUNNELED lookups, best first.
+     *
+     * The network's own resolvers come first: on a network that only answers its
+     * own resolver (and blocks UDP/53 to anywhere else) they are the only ones that
+     * work at all. The public ones are the fallback for the opposite network, and
+     * for the case where Android reports no resolver for the active link.
+     */
+    internal fun resolvers(context: Context): List<String> =
+        (deviceResolvers(context) + PUBLIC_RESOLVERS).distinct().take(MAX_RESOLVERS)
+
+    /** IPv4 resolvers of the active, non-VPN network, as Android reports them. */
+    private fun deviceResolvers(context: Context): List<String> = runCatching {
+        val cm = context.getSystemService(ConnectivityManager::class.java)
+            ?: return@runCatching emptyList<String>()
+        val network = cm.activeNetwork ?: return@runCatching emptyList<String>()
+        // A VPN link's resolvers are OUR tunnel's; Psiphon dials outside it.
+        if (cm.getNetworkCapabilities(network)?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true) {
+            return@runCatching emptyList<String>()
+        }
+        cm.getLinkProperties(network)?.dnsServers
+            ?.filterIsInstance<Inet4Address>()
+            ?.mapNotNull { it.hostAddress }
+            ?.filter { it.isNotBlank() && !it.startsWith("127.") }
+            .orEmpty()
+    }.getOrDefault(emptyList())
 
     /**
      * Environment for the engine process (and so for the Psiphon child it spawns,
@@ -151,14 +214,22 @@ object PsiphonBootstrap {
 
     /**
      * Laid over the engine's built-in Psiphon config (`--psiphon-config`, read from
-     * `AETHER_PSIPHON_CONFIG`). Only the trust store: everything else stays the
-     * engine's.
+     * `AETHER_PSIPHON_CONFIG`). The trust store and the resolvers: everything else
+     * stays the engine's.
+     *
+     * `DNSResolverAlternateServers` is psiphon-tunnel-core's own parameter for
+     * "resolvers to use when the system ones are unusable", which on Android with a
+     * static linux build is always. Without it every untunneled lookup is refused
+     * on the loopback address - see the class note.
      */
-    private fun writeOverlay(dir: File) {
+    private fun writeOverlay(dir: File, resolvers: List<String>) {
         val json = JSONObject()
         val bundle = File(dir, CA_BUNDLE)
         if (bundle.isFile && bundle.length() > 0) {
             json.put("TrustedCACertificatesFilename", bundle.absolutePath)
+        }
+        if (resolvers.isNotEmpty()) {
+            json.put("DNSResolverAlternateServers", JSONArray(resolvers))
         }
         val target = File(dir, BASE_CONFIG)
         if (json.length() == 0) {
@@ -167,6 +238,12 @@ object PsiphonBootstrap {
         }
         target.writeText(json.toString())
     }
+
+    /** Public resolvers used when the network's own are unknown or unusable. */
+    private val PUBLIC_RESOLVERS = listOf("1.1.1.1", "8.8.8.8", "9.9.9.9")
+
+    /** Enough for redundancy without turning one lookup into a long serial walk. */
+    private const val MAX_RESOLVERS = 5
 
     private const val TAG = "psiphon"
 }

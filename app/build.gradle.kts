@@ -130,8 +130,8 @@ android {
         applicationId = "studio.cluvex.aether"
         minSdk = 26
         targetSdk = 35
-        versionCode = 16
-        versionName = "1.4.0"
+        versionCode = 18
+        versionName = "1.5.0"
 
         ndk {
             // arm64 (primary), arm, and x86_64 for Chromebooks and emulators
@@ -160,8 +160,8 @@ android {
         // ------------------------------------------------------------------
         // 1.2.8-r5 BUILD IDENTITY.
         //
-        // 1.4.0 ships as versionName "1.4.0" / versionCode 16, and PATCHLEVEL is
-        // "1.4.0" with it. The field stays, because it is what identifies a build
+        // 1.5.0 ships as versionName "1.5.0" / versionCode 18, and PATCHLEVEL is
+        // "1.5.0" with it. The field stays, because it is what identifies a build
         // beyond its version name: r2,
         // r3 and r4 were all "1.2.8 (12)", the engine banner printed only the
         // upstream core version (1.8.0) which is identical in all of them, and
@@ -386,6 +386,13 @@ dependencies {
 
     implementation("androidx.datastore:datastore-preferences:1.1.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+
+    // 1.5.0 custom configs: JSON for the Xray config writer and the config parser
+    // (the JsonElement API only, so no serialization compiler plugin is needed),
+    // and ZXing for QR codes - the camera scanner and decoding a QR from an image.
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+    implementation("com.google.zxing:core:3.5.3")
+    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
 

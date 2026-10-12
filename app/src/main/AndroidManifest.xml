@@ -7,6 +7,11 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- 1.5.0 custom configs: scanning a config QR code. Asked for only when the
+         user taps "Scan a QR code"; the camera is optional hardware. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.any" android:required="false" />
     <!--
       1.2.2 SECURITY: REQUEST_INSTALL_PACKAGES was REMOVED together with the
       in-app updater. The app can no longer download or hand an APK to the
@@ -138,6 +143,16 @@
             android:name=".CrashReportActivity"
             android:exported="false"
             android:theme="@style/Theme.AetherMobile" />
+
+        <!-- 1.5.0: the custom-config QR scanner, always portrait. -->
+        <activity
+            android:name=".ui.settings.PortraitCaptureActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:stateNotNeeded="true"
+            android:theme="@style/zxing_CaptureTheme"
+            android:windowSoftInputMode="stateAlwaysHidden"
+            tools:ignore="DiscouragedApi,LockedOrientationActivity" />
 
         <!--
           1.2.2: the FileProvider that exported downloaded APKs to the system

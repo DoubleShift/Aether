@@ -347,6 +347,77 @@ verify_patch_stamp() {
   echo "    [${abi}] build stamp verified: ${PATCH_STAMP}"
 }
 
+# ---------------------------------------------------------------------------
+# 1.5.0 ROOT-CAUSE FIX: the engine's runtime dependencies.
+#
+# FIELD LOG (all six modes, every lane, every attempt):
+#   CANNOT LINK EXECUTABLE ".../lib/arm64/libaether.so":
+#     library "libc++_shared.so" not found: needed by main executable
+#
+# Core 2.3.0 moved from `boring` 4.22 to `boring` 5.2. Recent BoringSSL contains
+# C++ and boring-sys 5 builds it with CMAKE_ANDROID_STL_TYPE=c++_shared and
+# links the engine against the NDK's SHARED C++ runtime. libc++ is not an
+# Android system library, so the APK must carry it - and 1.5.0 did not. The
+# dynamic linker refused to start the engine before main(), so no tunnel of any
+# kind could come up (1.4.0 used boring 4.22, which had no C++ dependency).
+#
+# The fix is deliberately the boring one: whatever the engine says it NEEDS is
+# either an Android system library or shipped next to it in jniLibs. The app
+# starts the engine with LD_LIBRARY_PATH=nativeLibraryDir (AetherProcess.kt),
+# which is how an executable - unlike a dlopen()ed library - finds a packaged
+# dependency. Anything else that is unresolved fails the build HERE, instead of
+# reaching a phone as "the core stopped unexpectedly".
+# ---------------------------------------------------------------------------
+ndk_sysroot_triple() {
+  case "$1" in
+    arm64-v8a)   echo "aarch64-linux-android" ;;
+    armeabi-v7a) echo "arm-linux-androideabi" ;;
+    x86_64)      echo "x86_64-linux-android" ;;
+    x86)         echo "i686-linux-android" ;;
+    *) return 1 ;;
+  esac
+}
+
+# package_engine_runtime_deps <abi> <so>
+package_engine_runtime_deps() {
+  local abi="$1" so="$2" needed dep triple src
+  needed="$("${NDK_TOOLCHAIN}/llvm-readelf" -d "${so}" 2>/dev/null \
+    | sed -n 's/.*Shared library: \[\([^]]*\)\].*/\1/p')"
+  if [ -z "${needed}" ]; then
+    echo "ERROR: [${abi}] could not read the dynamic section of libaether.so." >&2
+    exit 1
+  fi
+  while IFS= read -r dep; do
+    [ -n "${dep}" ] || continue
+    case "${dep}" in
+      libc.so|libdl.so|liblog.so|libm.so|libandroid.so|libz.so) ;;
+      libc++_shared.so)
+        triple="$(ndk_sysroot_triple "${abi}")" || {
+          echo "ERROR: [${abi}] no NDK sysroot triple known for this ABI." >&2; exit 1; }
+        src="${NDK_TOOLCHAIN}/../sysroot/usr/lib/${triple}/libc++_shared.so"
+        if [ ! -f "${src}" ]; then
+          echo "ERROR: [${abi}] libaether.so needs libc++_shared.so but the NDK has none at ${src}" >&2
+          exit 1
+        fi
+        cp "${src}" "${JNI_DIR}/${abi}/libc++_shared.so"
+        chmod 644 "${JNI_DIR}/${abi}/libc++_shared.so"
+        echo "    [${abi}] packaged engine dependency: libc++_shared.so (from the NDK that linked it)"
+        ;;
+      *)
+        if [ -f "${JNI_DIR}/${abi}/${dep}" ]; then
+          echo "    [${abi}] engine dependency already packaged: ${dep}"
+        else
+          echo "ERROR: [${abi}] libaether.so needs ${dep}, which is neither an Android system" >&2
+          echo "       library nor packaged in jniLibs. The engine would fail on every phone with" >&2
+          echo "       'CANNOT LINK EXECUTABLE'. Refusing to ship it." >&2
+          exit 1
+        fi
+        ;;
+    esac
+  done <<< "${needed}"
+  echo "    [${abi}] libaether.so runtime dependencies resolved:" $(printf '%s ' ${needed})
+}
+
 build_aether() {
   local crate
   crate="$(detect_aether_crate || true)"
@@ -366,7 +437,7 @@ build_aether() {
   # situation on a local build.
   local abi
   for abi in "${ABIS[@]}"; do
-    rm -f "${JNI_DIR}/${abi}/libaether.so"
+    rm -f "${JNI_DIR}/${abi}/libaether.so" "${JNI_DIR}/${abi}/libc++_shared.so"
   done
 
   local bin_name
@@ -408,6 +479,7 @@ build_aether() {
     "${NDK_TOOLCHAIN}/llvm-strip" "${JNI_DIR}/${abi}/libaether.so" 2>/dev/null || true
     # Checked AFTER stripping, because stripping is what the shipped file gets.
     verify_patch_stamp "${abi}" "${JNI_DIR}/${abi}/libaether.so"
+    package_engine_runtime_deps "${abi}" "${JNI_DIR}/${abi}/libaether.so"
     echo "    installed libaether.so for ${abi}"
   }
 
@@ -545,13 +617,69 @@ build_psiphon() {
   build_psiphon_abi "x86_64"      "amd64" ""
 }
 
+# ============================================================================
+# Xray core (1.5.0, custom configs)
+#
+# The user's own V2Ray/Xray and NapsternetV configs run in Xray-core, as a
+# separate process exactly like the engine and Psiphon: installed as
+# `libxray.so` so it lands on the executable native-library path.
+#
+# Not built from source: the official, reproducible XTLS release binaries are
+# fetched at a PINNED version and checked against PINNED SHA-256 sums, so a
+# changed or tampered download fails the build instead of shipping.
+#
+# v25.12.8 on purpose: newer cores refuse `allowInsecure` and the mKCP `seed`,
+# both of which real-world share links and NapsternetV files still carry.
+# ============================================================================
+XRAY_VERSION="${XRAY_VERSION:-v25.12.8}"
+
+build_xray() {
+  local base="https://github.com/XTLS/Xray-core/releases/download/${XRAY_VERSION}"
+  fetch_xray_abi() {
+    local abi="$1" asset="$2" sum="$3" tmp zip ok=0 i
+    tmp="$(mktemp -d)"
+    zip="${tmp}/xray.zip"
+    echo "==> [xray] ${XRAY_VERSION} ${asset} -> ${abi}"
+    for i in 1 2 3 4 5; do
+      if curl -fsSL --retry 3 --connect-timeout 30 -o "${zip}" "${base}/Xray-${asset}.zip"; then
+        ok=1
+        break
+      fi
+      echo "    download attempt ${i} failed, retrying..." >&2
+      sleep $((i * 5))
+    done
+    if [ "${ok}" != "1" ]; then
+      echo "ERROR: could not download Xray-${asset}.zip" >&2
+      exit 1
+    fi
+    if [ "${XRAY_VERSION}" = "v25.12.8" ]; then
+      echo "${sum}  ${zip}" | sha256sum -c - >/dev/null || {
+        echo "ERROR: Xray-${asset}.zip does not match its pinned SHA-256" >&2
+        exit 1
+      }
+    else
+      echo "    WARNING: XRAY_VERSION overridden - no pinned checksum for ${XRAY_VERSION}" >&2
+    fi
+    unzip -q -o "${zip}" xray -d "${tmp}"
+    mkdir -p "${JNI_DIR}/${abi}"
+    cp "${tmp}/xray" "${JNI_DIR}/${abi}/libxray.so"
+    chmod 755 "${JNI_DIR}/${abi}/libxray.so"
+    rm -rf "${tmp}"
+    echo "    installed libxray.so for ${abi}"
+  }
+  fetch_xray_abi "arm64-v8a"   "android-arm64-v8a" "670dd5c114b0e1e61d32623b7df8009ef9e5f965b3efa7a8c89a0289420e5b77"
+  fetch_xray_abi "x86_64"      "android-amd64"     "2f83265ed8d688f3e42e006b06cda856f390706e8fca37b1123b5127fbac7922"
+  fetch_xray_abi "armeabi-v7a" "linux-arm32-v7a"   "ffa5450bdc9fbc964ad00d1aed075960efdee7fcefb854055068d9fa1d9ddfe1"
+}
+
 case "${TARGET}" in
   hev)    build_hev ;;
   aether) build_aether ;;
   pt)     build_pt ;;
   psiphon) build_psiphon ;;
-  all)    build_hev; build_aether; build_pt; build_psiphon ;;
-  *) echo "Usage: build-natives.sh [hev|aether|pt|psiphon|all]" >&2; exit 2 ;;
+  xray)   build_xray ;;
+  all)    build_hev; build_aether; build_pt; build_psiphon; build_xray ;;
+  *) echo "Usage: build-natives.sh [hev|aether|pt|psiphon|xray|all]" >&2; exit 2 ;;
 esac
 
 echo "==> Done (${TARGET}). Installed libs:"

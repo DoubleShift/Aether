@@ -1,5 +1,96 @@
 # Changelog
 
+## 1.5.0 — engine core 2.3.0
+
+#### What's new dialog and Messages & announcements
+
+- **A "What's new" dialog opens on its own** on the first launch after a fresh install or an upgrade (after onboarding). It is fully RTL in Vazirmatn on a dark-navy panel with a slim themed scrollbar; every Latin term and chain arrow (`Config → Psiphon`, `VLESS`, `BPB`, …) is isolated LTR so the Persian text and brackets never reorder.
+- **«دیگر این پیام را نمایش نده»:** ticking it and closing the dialog (button, close icon or back) silences it for this version only; without the tick it opens again on the next launch. The next upgrade shows its own news again.
+- **Settings → Messages & announcements** keeps every announcement; tap one to read it again in the same dialog.
+
+#### Custom configs: V2Ray / Xray and NapsternetV, alone or chained
+
+A new **Settings → Custom configs** section runs your own configs next to the built-in engines.
+
+- **Import any way you have it:** paste a link or text (one or many links, a base64 subscription, an `https://` subscription URL or a full Xray JSON config), pick a file (`.npvt`, `.txt`, `.json`, or a QR image), **scan a QR code with the camera**, or **read a QR code from an image** (screenshot / saved picture).
+- **Protocols:** VLESS (incl. REALITY and XTLS Vision), VMess (v2rayN base64 and URI form), Trojan, Shadowsocks (SIP002 and legacy), SOCKS and WireGuard; transports TCP/raw, WebSocket, gRPC, HTTPUpgrade, **XHTTP** and mKCP, with TLS (`allowInsecure`, ALPN, uTLS fingerprint) or REALITY.
+- **NapsternetV `.npvt` — fully supported**, as a file and as an `npvt://` link. Files are decrypted on the device; every V2Ray/Xray server inside becomes its own config. **The author's lock is honoured:** a locked config hides its server, keys and raw text (it can be used, chained, renamed and deleted, never viewed, edited or copied); a password-protected file asks for its password; an expiry date and "mobile data only" are enforced; a device-bound file is refused.
+- **Saved list:** select, edit (re-validated before it is saved), rename, copy link, delete, delete all. Configs are stored **encrypted** with the app's Android-Keystore key.
+- **Chains (15 modes)** — the config can sit in front of the built-in engine (the engine dials through it) or behind its exit (the config is dialled through the engine):
+
+  | Single | Double | Triple |
+  |---|---|---|
+  | `Config` | `Config → Aether` · `Aether → Config` | `Config → Aether → Psiphon` · `Config → Aether → Tor` |
+  | | `Config → Psiphon` · `Psiphon → Config` | `Config → Tor → Psiphon` · `Config → Tor → Aether` |
+  | | `Config → Tor` · `Tor → Config` | `Aether → Psiphon → Config` · `Aether → Tor → Config` |
+  | | | `Tor → Psiphon → Config` · `Tor → Aether → Config` |
+
+  The config is always at one end of the chain: Tor and Psiphon run inside the engine process, so a config cannot be placed between two of the engine's own hops.
+- **The home screen shows the live chain** in its pipeline row, exactly as it runs — `VLESS → Aether(WireGuard)`, `Npvt → Psiphon`, `Aether → Psiphon → Trojan` — and switches to a shorter spelling of the same chain (then a smaller font) when a long triple chain does not fit.
+- **How it runs:** the config runs in **Xray-core v25.12.8** (`libxray.so`, a separate process like the engine and Psiphon, outside the VPN so it never loops into its own tunnel). Single mode: Xray alone behind the TUN. `Config → …`: the engine's upstream is Xray's local SOCKS5 (UDP included). `… → Config`: Xray dials through the engine's exit with `dialerProxy`, and its own lookups ride TCP. Xray is supervised and restarted if it exits; a dead path rebuilds the session like every other mode.
+- **Nothing else changed:** with Custom configs switched off (the default) every session runs exactly as before. Engine settings (protocol, exit country, Tor bridges, split tunnelling, kill switch, proxy mode, LAN sharing) still apply to the engine hops and to the session.
+- **Fixed: chains with Tor stalled or crawled** (`Config → Tor`, `Tor → Config`, `Config → Tor → Psiphon`, `Config → Aether → Tor`, …) while Tor alone and the config alone were fast. Xray's inbound had traffic sniffing on with `destOverride`, which replaces the address a connection was opened to with the SNI it reads. Tor's link handshake to a relay carries a made-up SNI, so every guard/relay dial through the config turned into a lookup of a name that does not exist (`Could not connect to guard`, `tls handshake eof`, Tor stuck at 93 %); domain-fronted transports (Psiphon, meek) were bent the same way. Sniffing is now off: Xray carries every connection to exactly the address it was given.
+- **Polish:** the *Delete all configs* button has its own spacing instead of sitting glued to the saved list, and the QR scanner opens **locked to portrait**.
+- **New permission:** `CAMERA`, asked for only when you tap *Scan a QR code* (camera hardware is optional). New libraries: Xray-core (MPL-2.0, binary), ZXing core + zxing-android-embedded (Apache-2.0), kotlinx.serialization-json (Apache-2.0).
+- **Tests:** 23 new unit tests (link/JSON/subscription parsing, an NPVT known-answer vector and lock rules, chain labels, generated Xray configs); with `XRAY_BIN` set, every generated config is also checked by `xray run -test`.
+
+#### Custom-config chains: fixes
+
+- **Fixed: `Npvt → Tor` hung at "Verification".** Xray's policy for the chain level still carried desktop-shaped timeouts (`handshake 8 s`, `connIdle 300 s`, `uplinkOnly 2 s`, `downlinkOnly 5 s`). A Tor link handshake through a mobile config regularly needs longer than eight seconds, and Tor keeps directory and circuit streams idle for minutes, so Xray cut them mid-flight — the engine logged `tls handshake eof`, `Channel timed out` and stopped at 93 %. The chain level now uses `handshake 30 s`, `connIdle 1800 s` and no one-sided idle timers, so a hop that is slow to answer is waited for instead of being killed.
+- **Fixed: `Tor → Npvt` connected but crawled.** Every device flow opened its own Tor stream *and* its own TLS/REALITY handshake to the config server, which over Tor costs seconds each. Chains where the config sits behind a slow engine hop now multiplex up to 8 streams over one connection (Mux is left off for single mode, for WireGuard/Hysteria and for XTLS-flow configs, where it is unsupported or harmful). The local SOCKS front also treated every transient `SOCKS5 reply 1` from Tor as a hard failure, which turned a busy circuit into a retry storm; it now retries such a stream three times with backoff and counts the retries in the drop summary.
+- **Fixed: `Psiphon → Config` never connected** (`Psiphon → Npvt`, `Psiphon → VLESS`), while `Config → Psiphon` always worked. The bundled Psiphon binary is a static Linux Go build, and Go resolves names from `/etc/resolv.conf`, which does not exist on Android: its untunnelled lookups fell back to loopback and died with `connection refused`, so it never reached a server. The reverse chains worked only because Psiphon then resolved through the config's SOCKS. Psiphon is now handed the device's real resolvers (from the active network, with public fallbacks) in its config overlay. If it still cannot bootstrap in this position, the chain fails with a clear message instead of hanging.
+- **Reviewed the other chains for the same three causes** — the timeout, Mux and resolver fixes are applied by the same code paths to every mode, so `Config → Tor → Psiphon`, `Tor → Aether → Config`, `Aether → Psiphon → Config` and the rest get them too.
+
+#### Custom configs: real delay, smart diagnosis, working paste
+
+- **Real delay (ping) per config**, measured the way v2rayNG does it: the config itself is started in Xray-core and an HTTP request is made *through* it (see “Real delay test rewritten” below) — not ICMP, which most servers and most Iranian networks drop. Test one config from its menu, or **test every config at once**. The result is shown in milliseconds on the config card, green/amber/red by latency, and a failure is recorded as **`-1`** with its reason.
+- **Smart diagnosis.** A failed test is labelled by *why* it failed: **Server off / unreachable** when the host does not resolve or the port is refused; **No response** when the server accepts TCP but the protocol does not answer (wrong or expired UUID/key/SNI, or the protocol itself is filtered); **Filtered** when the name resolves to a censor's sinkhole or the TCP connection is silently dropped; **Invalid config** when Xray refuses the config. If the phone has no network at all, that is said instead of blaming the server.
+- **Paste from clipboard is fixed.** The button read the clipboard through Compose, which returns nothing for a clip that is a URI, HTML or has more than one item — exactly what sharing a config link from Telegram or a browser produces, so the button silently did nothing. Pasting now reads the platform clipboard and coerces every item to text, and says so when the clipboard really is empty.
+- **Tests:** 11 new unit tests for endpoint extraction (including locked NPVT configs, whose address is read without being revealed), the failure-classification matrix, sinkhole detection, plus new chain tests that assert the chain timeouts, that Mux is on only for a slow hop and never for XTLS-flow configs.
+
+#### Engine upgraded from 2.1.0 to 2.3.0
+
+- **Rebased, not overwritten.** Every app engine patch was carried onto core 2.3.0 by a three-way merge: netstack congestion control and backpressure, manual endpoint ranges, the quick-reconnect RTT budget, the smart-routing index and DNS sinkhole, the embedded Psiphon server list and the build-provenance stamp. The `smoltcp` 0.12 + CUBIC pin stays, and `Cargo.lock` was re-pinned to match.
+- **Chrome-shaped TLS** on every handshake that carries the tunnel (MASQUE over HTTP/3 and HTTP/2, the WARP API, the ECH lookup): Chrome's cipher suites, GREASE and permuted extensions.
+- **ECH now also covers the WARP API calls.** Without a usable ECH config the name never goes out in the clear.
+- **IPv6-only names resolve inside the tunnel** (AAAA fallback in the engine resolver).
+- **Gool:** by default it now carries WireGuard inside MASQUE for a foreign exit; the older WireGuard-in-WireGuard is `--gool-classic`.
+- **Psiphon:** the engine takes a server-entries file itself; the app's embedded list is handed over through it, never twice.
+- BoringSSL bindings `boring` 5.2; the WARP API module `apifront.rs` became `https.rs`.
+- **Fixed: no connection would start in 1.5.0.** BoringSSL in `boring` 5.2 needs the C++ runtime, so the 2.3.0 engine came out linked against `libc++_shared.so`, which the APK did not contain. Android refused to start the engine (`CANNOT LINK EXECUTABLE`) and all six connection modes failed. The runtime now ships next to the engine, the engine is started with it on its library path, and the build and CI refuse any APK whose engine needs a library it does not carry.
+
+#### Chains through Tor, clipboard paste, Psiphon start-up
+
+- **Fixed: `Config → Tor`, `Config → Tor → Aether`, `Config → Tor → Psiphon` failed at the guard handshake** (`tls handshake eof`). Tor's link handshake carries a random fake SNI (`www.<random>.com`); servers with traffic sniffing enabled (the 3x-ui / Marzban default) replace the relay address with that name, fail to resolve it and close the connection. When the engine dials Tor through an upstream proxy, the app now sets `AETHER_TOR_LINK_SNI=off` and the vendored `tor-chanmgr` sends the relay handshake without SNI, so the server forwards it to the relay's IP.
+- **Fixed: Tor bootstrap over bridges stopped at "directory timed out".** `tor-dirclient` limited a whole directory response to 10 seconds, which a consensus or microdescriptor batch cannot meet over a slow chain. The vendored `tor-dirclient` now uses a 20 s idle timeout (re-armed on every read) and a 180 s total limit.
+- **Fixed: every bridge attempt downloaded the full directory again.** Each attempt (`direct`, `obfs4`, …) had an empty cache of its own. The engine now keeps a snapshot of the freshest usable directory cache and copies it into an attempt that has nothing as fresh (guard state stays separate).
+- **Fixed: Xray closed half-closed chain connections immediately.** `uplinkOnly` / `downlinkOnly` = 0 means "close at once" in Xray; the chain level now uses 10 s / 30 s.
+- **Fixed: Paste from clipboard showed the system "pasted" toast but inserted nothing.** The import field ignored outside value changes while it had focus; a paste now always replaces its content. Pasted text is cleaned of invisible direction and zero-width marks, and links are found inside longer text (several per line, trailing punctuation trimmed).
+- **Fixed: disconnecting while `Psiphon → Config` was starting** was logged as a Psiphon failure (`StandaloneCoroutine was cancelled`); cancellation now stops the session cleanly.
+- Vendored crates: `native/aether/vendor/tor-chanmgr` and `native/aether/vendor/tor-dirclient` (arti 0.46.0, MIT OR Apache-2.0), wired in with `[patch.crates-io]`; every change is marked `AETHER-VENDOR-PATCH`.
+- **Tests:** new unit tests for clipboard input cleaning and link extraction, the Tor upstream environment, and the Xray half-close timers.
+
+#### Real delay test rewritten (fixed: every config showed `-1` / Filtered)
+
+- **Root cause.** The old test did a raw TCP connect and then a TLS handshake with the phone's own TLS stack (Conscrypt) and a trust-everything certificate check. That is not what the config does: a **REALITY** server only completes a handshake for a client carrying the config's public key and short ID — for anyone else it relays to the camouflage site or simply holds the connection — so the handshake timed out or was reset; the ClientHello did not carry the config's uTLS fingerprint (`firefox`, `chrome`, …), which DPI on Iranian networks treats differently; the server name was resolved with the network's (often poisoned) resolver; and every exception the code did not recognise fell through to *reset → Filtered*. A config that connects in two seconds therefore showed `-1 · Filtered`. The results were also never written to the log, so the report showed nothing.
+- **New method (as in v2rayNG / Npvt):** one Xray-core process per batch (up to 32 configs) with one loopback SOCKS inbound per config, each routed to that config's real outbound (same transport, TLS/REALITY, uTLS fingerprint, flow and DNS as a real connection). The app then sends `GET /generate_204` to `www.gstatic.com` (fallback `cp.cloudflare.com`) through each inbound and times the round trip from the SOCKS reply to the first HTTP status line; two rounds, the faster one is reported. The handshake limit is 8 s. A config that Xray refuses is retried alone and reported as **Invalid config**; the rest of the batch still runs.
+- **Diagnosis after a failure only:** if the real delay fails, a plain TCP check tells *No response* (TCP accepted, protocol silent) from *Server off* and *Filtered*. A successful real delay is never overridden by the TCP check.
+- **Logged:** every test writes `Real delay <name>: N ms` or `-1 (<reason>) -> <status>` to the diagnostics log (server addresses redacted).
+- **Probe inbounds are password-protected** (random user/password per app start, SOCKS5 RFC 1929), loopback-only, UDP off, so another app on the phone cannot use them during a test.
+- **Validated** against a local Xray server: VLESS REALITY 12–21 ms, VLESS WebSocket 5–16 ms, wrong UUID → *No response*, closed port → *Server off*; every generated probe config passes `xray run -test`.
+
+#### Security audit 1.5.0 — 92 / 100 (`docs/SECURITY_AUDIT_1.5.0.md`)
+
+- **Fixed:** the ping probe's trust-everything `TrustManager` is gone (no custom TrustManager remains in the app).
+- **Fixed:** Xray log lines could reveal the server address and UUID of a **locked** NPVT config in the diagnostics log; Xray output is now redacted (UUIDs, host names, IPv6, IPv4 reduced to /16).
+- **Fixed:** while a session was running, subscription downloads left on the bare network (the app itself is excluded from the VPN to avoid loops), exposing the subscription host and the real IP; they now go through the session's local SOCKS port.
+- **Fixed:** *Copy link* of a config was not marked sensitive on the clipboard; it now uses `EXTRA_IS_SENSITIVE` like every other secret.
+- **Open, documented:** the session's local SOCKS listeners on `127.0.0.1` have no authentication (another app on the phone, in particular one excluded by split tunnelling, could use them); IPv6 leak protection can be switched off outside chained modes; proxy mode and split-tunnel-excluded apps bypass the tunnel by design (including WebRTC); LAN sharing has no password by default.
+- **Tests:** new `RealDelayTest` (probe config structure, fake SOCKS server: success / closed / hang / wrong credentials, batch splitting, invalid config fallback, sinkhole and diagnosis matrix, `xray run -test`, live samples with `AETHER_PING_SAMPLES`) and `XrayLogRedactionTest`; 287 unit tests, 0 failures.
+
+**Version:** app 1.5.0, version code 18, `PATCHLEVEL` 1.5.0, engine core 2.3.0. Signing unchanged.
+
+
 ## 1.4.0 — engine core 2.1.0, Psiphon inside the engine
 
 App **1.4.0**, version code **16**, engine core **2.1.0**, `PATCHLEVEL` 1.4.0. Same signing

@@ -7,6 +7,7 @@ import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -93,17 +94,34 @@ fun LtrOutlinedTextField(
     // Added in 1.2.3: lets Zero Trust secrets be masked while still getting the
     // LTR/BiDi handling every technical field in this app needs.
     visualTransformation: VisualTransformation = VisualTransformation.None,
+    /**
+     * Bump this to push [value] into the field even while it has focus.
+     *
+     * The focus rule below is right for async echoes, but it also swallowed
+     * deliberate replacements made by the screen itself: "Paste from clipboard"
+     * in the config import dialog set the text while the field was focused (it
+     * is focused as soon as the dialog opens), so the pasted link never appeared
+     * and the import had nothing visible to work with. A caller that replaces
+     * the value on purpose increments this counter; nothing else can.
+     */
+    replaceKey: Int = 0,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
 
     // Local, synchronous source of truth while the user is typing.
     var fieldValue by remember { mutableStateOf(TextFieldValue(normalizeTechnicalText(value))) }
+    var appliedReplaceKey by remember { mutableIntStateOf(replaceKey) }
 
-    // Accept external value changes (initial profile load, reset-to-defaults)
-    // ONLY while the field is not focused. While focused, keystrokes rule —
-    // a stale async echo of an older value can never overwrite them.
-    if (!isFocused && fieldValue.text != value) {
+    if (replaceKey != appliedReplaceKey) {
+        // An explicit replacement by the caller: applied whatever the focus.
+        appliedReplaceKey = replaceKey
+        val replaced = normalizeTechnicalText(value)
+        fieldValue = TextFieldValue(replaced, TextRange(replaced.length))
+    } else if (!isFocused && fieldValue.text != value) {
+        // Accept external value changes (initial profile load, reset-to-defaults)
+        // ONLY while the field is not focused. While focused, keystrokes rule -
+        // a stale async echo of an older value can never overwrite them.
         fieldValue = TextFieldValue(value, TextRange(value.length))
     }
 

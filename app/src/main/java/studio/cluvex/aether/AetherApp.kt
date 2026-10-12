@@ -61,6 +61,9 @@ class AetherApp : Application() {
             // present, so the bridge is never asked to expose the network without
             // one. Idempotent; the VPN service calls it too.
             runCatching { ShareCredentials.ensure(this) }
+            // 1.5.0: unseal the saved custom configs once, so the settings row and
+            // the first connect read them without touching the keystore again.
+            runCatching { studio.cluvex.aether.custom.CustomConfigStore.load(this) }
         }
 
         // 1.2.9 AI: bind the AI store to the process, once.

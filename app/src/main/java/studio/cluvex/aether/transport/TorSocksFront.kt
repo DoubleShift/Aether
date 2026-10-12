@@ -103,6 +103,19 @@ object TorSocksFront {
     /** How long a CONNECT through Tor may take before it is given up on. */
     private const val CONNECT_TIMEOUT_MS = 45_000
 
+    /** How many times one CONNECT is offered to Tor before the caller is told it failed. */
+    private const val CONNECT_ATTEMPTS = 3
+
+    /** Backoff between those attempts; multiplied by the attempt number. */
+    private const val CONNECT_RETRY_BACKOFF_MS = 150L
+
+    /**
+     * SOCKS5 replies that mean "this circuit did not work out", not "the
+     * destination said no": general failure, network and host unreachable, and
+     * TTL expired. Tor returns reply 1 for a circuit that failed to build.
+     */
+    private val RETRYABLE_REPLIES = setOf(REP_GENERAL_FAILURE, 3, REP_HOST_UNREACHABLE, 6)
+
     /**
      * How long a UDP association is kept after the last datagram.
      *
@@ -137,6 +150,9 @@ object TorSocksFront {
      */
     private val malformed = AtomicLong(0)
 
+    /** CONNECTs that only succeeded because they were retried on a fresh circuit. */
+    private val connectRetries = AtomicLong(0)
+
     /** Live count of associations, so a leak is visible instead of theoretical. */
     private val associations = ConcurrentHashMap<Int, Long>()
 
@@ -159,6 +175,7 @@ object TorSocksFront {
         udpDropped.set(0)
         quicDropped.set(0)
         malformed.set(0)
+        connectRetries.set(0)
         associations.clear()
 
         val server = ServerSocket()
@@ -223,7 +240,8 @@ object TorSocksFront {
         val other = udpDropped.get()
         val failed = dnsFailures.get()
         val bad = malformed.get()
-        if (quic == 0L && other == 0L && failed == 0L && bad == 0L) return null
+        val retried = connectRetries.get()
+        if (quic == 0L && other == 0L && failed == 0L && bad == 0L && retried == 0L) return null
         return buildString {
             append("Tor front: ")
             append("${dnsQueries.get()} DNS queries over TCP")
@@ -231,6 +249,7 @@ object TorSocksFront {
             if (quic > 0) append(", $quic QUIC datagrams dropped (Tor has no UDP; apps fall back to TCP)")
             if (other > 0) append(", $other other UDP datagrams dropped")
             if (bad > 0) append(", $bad malformed datagrams")
+            if (retried > 0) append(", $retried stream(s) rebuilt on another circuit")
         }
     }
 
@@ -320,7 +339,7 @@ object TorSocksFront {
         target: Target,
     ) {
         val upstream = try {
-            openThroughTor(target)
+            openThroughTorWithRetry(target)
         } catch (e: Exception) {
             DiagnosticsLog.d(TAG, "CONNECT ${label(target)} refused by Tor: ${e.message}")
             reply(output, REP_HOST_UNREACHABLE)
@@ -344,6 +363,50 @@ object TorSocksFront {
             runCatching { upstream.close() }
         }
     }
+
+    /**
+     * [openThroughTor], but a transient refusal is retried on a fresh circuit.
+     *
+     * ROOT CAUSE this answers (field log, `Tor -> Npvt`, and every other
+     * `... -> Config` chain): Tor answers `SOCKS5 reply 1` whenever the circuit it
+     * would have used failed to build or an exit refused the stream - a normal,
+     * transient event on a loaded network. The front turned every one of those into
+     * a hard `host unreachable` for the caller, so the LOG filled with dozens of
+     * identical "refused by Tor (SOCKS5 reply 1)" lines while the config's core
+     * rebuilt the same connection over and over, each attempt paying a full
+     * handshake. That retry loop - not Tor itself - is what the user reads as
+     * "it connects, but it is unusably slow".
+     *
+     * Retrying HERE is what makes it cheap: Tor picks another circuit for the new
+     * stream, and the caller never sees the failure at all. Only the general
+     * failure / TTL-expired replies are retried; a connection REFUSED by the
+     * destination (reply 5) is the truth and is passed straight back.
+     */
+    private fun openThroughTorWithRetry(target: Target): Socket {
+        var last: Exception? = null
+        for (attempt in 1..CONNECT_ATTEMPTS) {
+            try {
+                val socket = openThroughTor(target)
+                if (attempt > 1) connectRetries.incrementAndGet()
+                return socket
+            } catch (e: TorStreamRefused) {
+                last = e
+                if (!e.retryable || attempt == CONNECT_ATTEMPTS) throw e
+                Thread.sleep(CONNECT_RETRY_BACKOFF_MS * attempt)
+            } catch (e: Exception) {
+                // The local hop to Tor itself failed (it is restarting, or gone).
+                // One more try costs a millisecond; a third would just delay the
+                // caller's own error handling.
+                last = e
+                if (attempt >= 2) throw e
+                Thread.sleep(CONNECT_RETRY_BACKOFF_MS)
+            }
+        }
+        throw last ?: IllegalStateException("Tor could not open the stream")
+    }
+
+    /** Tor refused one stream. [retryable] tells a transient circuit failure from a real refusal. */
+    private class TorStreamRefused(message: String, val retryable: Boolean) : IllegalStateException(message)
 
     /**
      * Opens one stream through Tor, keeping a hostname a hostname.
@@ -403,7 +466,10 @@ object TorSocksFront {
         input.readUnsignedShort()
         if (status != REP_SUCCESS) {
             socket.close()
-            throw IllegalStateException("Tor could not open the stream (SOCKS5 reply $status)")
+            throw TorStreamRefused(
+                "Tor could not open the stream (SOCKS5 reply $status)",
+                retryable = status in RETRYABLE_REPLIES,
+            )
         }
         // Streams live as long as the flow does; the connect budget was for the
         // circuit, not for an idle browser tab.

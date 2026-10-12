@@ -16,6 +16,23 @@ import studio.cluvex.aether.core.TunnelConfig
 enum class Protocol { AUTO, MASQUE, WIREGUARD, GOOL, MIM }
 
 /**
+ * Which gool the engine builds when [Protocol.GOOL] is in use (core 2.3.0).
+ *
+ * Core 2.3.0 changed what `--gool` means: it now carries the WireGuard WARP tunnel
+ * INSIDE a MASQUE one, with an identity registered from inside WARP, so the session
+ * leaves from a foreign address. The older behaviour - WireGuard tunneled in
+ * WireGuard - moved to `--gool-classic`.
+ *
+ *  - [MODERN]  : `--gool`, WireGuard over MASQUE (the engine's default).
+ *  - [CLASSIC] : `--gool-classic`, WireGuard over WireGuard.
+ *
+ * [MODERN] is the default because it is exactly what this build already sent the
+ * vendored 2.3.0 core before the choice existed, so a user who never opens the
+ * setting gets the same session as before. Persisted by NAME, like [Protocol].
+ */
+enum class GoolMode { MODERN, CLASSIC }
+
+/**
  * Whether Tor should reach the network through bridges (core 2.0.0).
  *
  * [AUTO] is the engine's own behaviour: try Tor plainly for a moment and turn to
@@ -264,6 +281,20 @@ data class ConnectionProfile(
     val noDataCheck: Boolean = false,
     /** Restrict TLS curve groups, e.g. "X25519:P-256" (engine `--tls-groups`). */
     val tlsGroups: String = "",
+    /**
+     * Core 2.3.0: TLS 1.2 cipher suites of the engine's ClientHello, as a BoringSSL
+     * cipher string with names separated by ':' (engine `--tls-ciphers`). Listed after
+     * the TLS 1.3 suites, which no cipher string changes; HTTP/3 lists none because
+     * QUIC offers TLS 1.3 alone. Blank = the engine's own Chrome list
+     * ([DEFAULT_TLS_CIPHERS]), which is what every user got before this field existed.
+     */
+    val tlsCiphers: String = "",
+    /**
+     * Core 2.3.0: leave the GREASE values (RFC 8701) out of the ClientHello
+     * (engine `--disable-grease`). Off by default: Chrome sends GREASE, and a
+     * handshake without it stops looking like Chrome's.
+     */
+    val disableGrease: Boolean = false,
     /** Endpoint validation window, seconds; 0 = engine default. */
     val validateSecs: Int = 0,
     /** Delay between engine-level reconnects, seconds; 0 = engine default. */
@@ -353,6 +384,14 @@ data class ConnectionProfile(
      */
     val fastEndpointOnly: Boolean = false,
 
+    // ---- Added in 1.5.0 (engine core 2.3.0) ----
+
+    /**
+     * Which gool [Protocol.GOOL] builds; see [GoolMode]. Only consulted when the
+     * engine is actually asked for gool (by the user, or by Smart resolving AUTO).
+     */
+    val goolMode: GoolMode = GoolMode.MODERN,
+
     // ---- Added in 1.3.0 (engine core 2.0.0: Tor) ----
 
     /**
@@ -435,6 +474,12 @@ data class ConnectionProfile(
      */
     val enginePsiphon: Boolean = false,
     val bindOverride: Int = 0,
+    /**
+     * 1.5.0 custom configs: run the engine as plain Psiphon (`--psiphon-only`, core
+     * 2.1.0) for a `Config -> Psiphon` or `Psiphon -> Config` chain. Transient, set
+     * only on the engine copy a custom chain launches; never persisted or encoded.
+     */
+    val enginePsiphonOnly: Boolean = false,
 
 ) {
     /** The local SOCKS5 port this profile's engine will listen on. */
@@ -550,6 +595,22 @@ data class ConnectionProfile(
         args += "--bind"
         args += "${TunnelConfig.SOCKS_HOST}:${bindPort}"
 
+        // ---- Psiphon only (1.5.0 custom-config chains) -------------------
+        // No tunnel and no Tor: the listener on --bind IS Psiphon. Everything a
+        // WARP tunnel would need is meaningless here, so nothing else is sent.
+        if (enginePsiphonOnly) {
+            args += "--psiphon-only"
+            sanitizedPsiphonRegion()?.let {
+                args += "--psiphon-region"
+                args += it
+            }
+            sanitizedDns().takeIf { it.isNotEmpty() }?.let {
+                args += "--dns"
+                args += it.joinToString(",")
+            }
+            return args
+        }
+
         // ---- Tor (engine core 2.0.0) -------------------------------------
         //
         // Emitted FIRST because in the `--tor-only` modes it decides that most of
@@ -620,7 +681,13 @@ data class ConnectionProfile(
             Protocol.AUTO -> { /* resolved before launch */ }
             Protocol.MASQUE -> args += "--masque"
             Protocol.WIREGUARD -> args += "--wg"
-            Protocol.GOOL -> args += "--gool"
+            // Core 2.3.0: `--gool` is WireGuard inside MASQUE; the older
+            // WireGuard-inside-WireGuard is `--gool-classic`, which selects gool
+            // by itself, so exactly one of the two is ever sent.
+            Protocol.GOOL -> args += when (goolMode) {
+                GoolMode.MODERN -> "--gool"
+                GoolMode.CLASSIC -> "--gool-classic"
+            }
             Protocol.MIM -> args += "--mim"
         }
 
@@ -708,6 +775,10 @@ data class ConnectionProfile(
             sanitizedRange(fragmentDelay)?.let { args += "--fragment-delay"; args += it }
         }
         sanitizedTlsGroups()?.let { args += "--tls-groups"; args += it }
+        // Core 2.3.0 fingerprint options. Only sent when the user deviated from the
+        // engine default, so an untouched profile launches exactly as before.
+        sanitizedTlsCiphers()?.let { args += "--tls-ciphers"; args += it }
+        if (disableGrease) args += "--disable-grease"
         if (validateSecs > 0) { args += "--validate-secs"; args += validateSecs.coerceIn(1, 3600).toString() }
         if (reconnectSecs > 0) { args += "--reconnect-secs"; args += reconnectSecs.coerceIn(1, 600).toString() }
         if (noProfileRetry) args += "--no-profile-retry"
@@ -799,6 +870,8 @@ data class ConnectionProfile(
         }
         if (noProfileRetry) put("AETHER_WG_NO_PROFILE_RETRY", "1")
         sanitizedTlsGroups()?.let { put("AETHER_TLS_GROUPS", it) }
+        sanitizedTlsCiphers()?.let { put("AETHER_TLS_CIPHERS", it) }
+        if (disableGrease) put("AETHER_DISABLE_GREASE", "1")
         if (coreLogLevel != CoreLogLevel.WARN) put("AETHER_LOG_LEVEL", coreLogLevel.raw)
 
         // ---- engine core 2.0.0 (1.3.0): Tor tuning ----
@@ -823,6 +896,13 @@ data class ConnectionProfile(
             // asked for explicitly; every quieter level is left to the engine, which
             // then logs Tor at info.
             if (coreLogLevel == CoreLogLevel.DEBUG) put("AETHER_TOR_LOG", "debug")
+            // 1.5.0: Tor dialled out through an upstream proxy (a custom config in
+            // front of Tor). Relay TLS handshakes then carry no SNI: arti's made-up
+            // `www.<random>.com` server name is what a sniffing V2Ray/Xray server
+            // swaps the relay's address for, and that name does not resolve -
+            // every guard failed as "tls handshake eof". Read by the engine's
+            // patched tor-chanmgr (native/aether/vendor).
+            if (sanitizedUpstream() != null) put(TOR_LINK_SNI_ENV, "off")
         }
 
         // ---- engine v1.7.0 (1.2.6) ----
@@ -944,7 +1024,22 @@ data class ConnectionProfile(
     private fun sanitizedTlsGroups(): String? =
         tlsGroups.trim().takeIf { it.matches(Regex("^[A-Za-z0-9:_-]{1,64}$")) }
 
+    /**
+     * The cipher string for `--tls-ciphers`, or null to keep the engine default.
+     *
+     * Only the characters a BoringSSL cipher string is made of (names, ':' or ','
+     * separators and the `! + - @ =` operators). Anything else - whitespace, quotes,
+     * a pasted sentence - is dropped instead of sent, because a value the engine
+     * cannot parse stops it at startup, and the UI flags such input as an error.
+     */
+    fun sanitizedTlsCiphers(): String? =
+        tlsCiphers.trim().takeIf { it.matches(TLS_CIPHERS_RE) }
+
     companion object {
+        /** The engine's own TLS 1.2 cipher rule (Chrome's), used when [tlsCiphers] is blank. */
+        const val DEFAULT_TLS_CIPHERS = "ALL:!aPSK:!ECDSA+SHA1:!3DES"
+        private val TLS_CIPHERS_RE = Regex("^[A-Za-z0-9:,_.+!@=-]{1,512}$")
+
         /** Safe default TUN MTU for Iranian mobile networks / aggressive DPI. */
         const val DEFAULT_MTU = 1280
         /** Presets offered in the UI. */
@@ -994,6 +1089,9 @@ data class ConnectionProfile(
         private const val CHAINED_RTT_BUDGET_MS = "1200"
         private const val CHAINED_HANDSHAKE_BUDGET_MS = "3500"
         private const val PSIPHON_OVER_TOR_READY_SECS = "900"
+
+        /** Engine switch for SNI-less relay TLS when Tor dials through an upstream proxy. */
+        const val TOR_LINK_SNI_ENV = "AETHER_TOR_LINK_SNI"
 
         /** Hard caps so a pasted blob can't build a gigantic argv. */
         const val MAX_DNS_SERVERS = 8

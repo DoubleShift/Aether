@@ -10,6 +10,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -68,6 +70,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -562,7 +565,10 @@ private fun AuthSection(
                             IconButton(onClick = { reveal = !reveal }) {
                                 Icon(
                                     if (reveal) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
-                                    contentDescription = null,
+                                    contentDescription = stringResource(
+                                        if (reveal) R.string.a11y_hide_password
+                                        else R.string.a11y_show_password,
+                                    ),
                                 )
                             }
                         },
@@ -631,6 +637,7 @@ private fun SwitchLine(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .toggleable(value = checked, role = Role.Switch, onValueChange = onChange)
             .padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -643,7 +650,7 @@ private fun SwitchLine(
             Text(text = summary, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Spacer(Modifier.width(8.dp))
-        Switch(checked = checked, onCheckedChange = onChange)
+                        Switch(checked = checked, onCheckedChange = null)
     }
 }
 
@@ -668,7 +675,7 @@ private fun ModeCard(
                 color = if (selected) accent.copy(alpha = 0.7f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
                 shape = shape,
             )
-            .clickable(onClick = onClick)
+                .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
             .heightIn(min = 112.dp)
             .padding(12.dp),
     ) {
@@ -774,7 +781,10 @@ private fun ValueRow(label: String, value: String, sensitive: Boolean = false, s
             IconButton(onClick = { reveal = !reveal }) {
                 Icon(
                     if (reveal) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
-                    contentDescription = null,
+                    contentDescription = stringResource(
+                        if (reveal) R.string.a11y_hide_value
+                        else R.string.a11y_show_value,
+                    ),
                     modifier = Modifier.size(20.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -788,7 +798,7 @@ private fun ValueRow(label: String, value: String, sensitive: Boolean = false, s
         ) {
             Icon(
                 Icons.Rounded.ContentCopy,
-                contentDescription = stringResource(R.string.share_copy),
+                contentDescription = stringResource(R.string.a11y_copy_value, label),
                 modifier = Modifier.size(20.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )

@@ -68,6 +68,16 @@ import studio.cluvex.aether.core.PsiphonEngine
 import studio.cluvex.aether.core.PsiphonBootstrap
 import studio.cluvex.aether.transport.TorSocksFront
 import studio.cluvex.aether.widget.AetherWidgetProvider
+import studio.cluvex.aether.custom.ChainBase
+import studio.cluvex.aether.custom.ChainPlacement
+import studio.cluvex.aether.custom.CustomConfig
+import studio.cluvex.aether.custom.CustomConfigStore
+import studio.cluvex.aether.custom.CustomSelection
+import studio.cluvex.aether.custom.CustomSession
+import studio.cluvex.aether.custom.XrayConfigBuilder
+import studio.cluvex.aether.custom.XrayProcess
+import studio.cluvex.aether.transport.PsiphonSocksFront
+import studio.cluvex.aether.transport.PsiphonTransport
 import java.io.File
 
 /**
@@ -149,6 +159,18 @@ class AetherVpnService : VpnService() {
      * See [dataPathBytes] and DATA_PATH_ALIVE_BYTES.
      */
     private var lastDataPathBytes = -1L
+
+    // ---- 1.5.0 custom configs ---------------------------------------------
+    /** The custom chain this session runs, or null for an ordinary session. */
+    @Volatile
+    private var customSelection: CustomSelection? = null
+
+    /** The running Xray hop of a custom chain, and the watchdog that restarts it. */
+    @Volatile
+    private var xray: XrayProcess? = null
+    private var xrayWatch: Job? = null
+    private val xrayLock = Any()
+    private var xrayGeneration = 0
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         live = this
@@ -322,6 +344,7 @@ class AetherVpnService : VpnService() {
                 // still had to run.
                 previousRun.cancel()
                 cleanupNativeOnly()
+                stopCustom()
                 previousRun.join()
             }
             previousStop?.join()
@@ -335,6 +358,7 @@ class AetherVpnService : VpnService() {
                 )
                 updateNotification(getString(R.string.state_error))
                 cleanupNativeOnly()
+                stopCustom()
             }
         }
     }
@@ -364,6 +388,26 @@ class AetherVpnService : VpnService() {
                 "protocol=${profile.protocol} exit=${profile.exitRegion.ifBlank { "auto" }}",
         )
 
+        // 1.5.0 CUSTOM CONFIGS. Only when the user switched a custom config on in
+        // Settings -> Custom configs; otherwise customSelection is null, every
+        // hook below is a no-op and the session runs exactly as it always has.
+        val custom = runCatching { CustomConfigStore.selection(applicationContext) }.getOrNull()
+        customSelection = custom
+        CustomSession.set(null)
+        if (custom != null) {
+            connectCustom(profile, custom)
+            return
+        }
+        connectEngineFlow(profile)
+    }
+
+    /**
+     * The engine part of every session: the six [TransportBackend] modes. This is
+     * the body [connectFlow] always had; a custom chain runs it unchanged, with
+     * the custom config in front of it (the engine's upstream) or behind its exit
+     * (see [customExit]).
+     */
+    private suspend fun connectEngineFlow(profile: ConnectionProfile) {
         if (profile.backend.usesExternal) {
             connectExternal(profile)
             return
@@ -540,7 +584,7 @@ class AetherVpnService : VpnService() {
         // The transport reports the port it ACTUALLY bound. Following it instead
         // of demanding one is what makes a chained session possible at all, and
         // it turns a port clash from a failed connection into a logged warning.
-        val port = try {
+        val enginePort = try {
             transport.start()
         } catch (e: PsiphonRegionFallback) {
             // 1.4.0: the engine's Psiphon treats the exit country as a HARD
@@ -553,9 +597,11 @@ class AetherVpnService : VpnService() {
             connectExternal(profile.copy(exitRegion = ""))
             return
         }
-        if (port != wantedPort) {
-            DiagnosticsLog.w(TAG, "${profile.backend.pipelineLabel} exposed SOCKS5 on $port (expected $wantedPort).")
+        if (enginePort != wantedPort) {
+            DiagnosticsLog.w(TAG, "${profile.backend.pipelineLabel} exposed SOCKS5 on $enginePort (expected $wantedPort).")
         }
+        // 1.5.0: a `... -> Config` chain puts the custom config behind this exit.
+        val port = customExit(enginePort)
 
         // 1.2.9-r3 (F-5): the LAN listeners authenticate remote clients, so the
         // credential has to be loaded BEFORE they bind. Synchronous on purpose -
@@ -765,7 +811,8 @@ class AetherVpnService : VpnService() {
                     "starting anyway.",
             )
         }
-        val frontPort = TorSocksFront.start(TOR_FRONT_PORT, SOCKS_HOST, torPort)
+        // 1.5.0: a `... -> Config` chain puts the custom config behind this exit.
+        val frontPort = customExit(TorSocksFront.start(TOR_FRONT_PORT, SOCKS_HOST, torPort))
 
         if (profile.lanShare) runCatching { ShareCredentials.ensure(this) }
 
@@ -1456,6 +1503,10 @@ class AetherVpnService : VpnService() {
             return
         }
 
+        // 1.5.0: a `... -> Config` chain puts the custom config behind the
+        // engine's listener; for every other session this is SOCKS_PORT itself.
+        val exitPort = customExit(SOCKS_PORT)
+
         if (profile.proxyMode) {
             // Proxy mode: DON'T capture the whole device through a system TUN.
             // Instead expose the engine's SOCKS5 + an HTTP proxy so individual
@@ -1470,7 +1521,7 @@ class AetherVpnService : VpnService() {
             // 1080/8118 as ready — external apps then couldn't connect).
             if (profile.lanShare) runCatching { ShareCredentials.ensure(this) }
             val shareReady =
-                ShareBridge.startSync(localOnly = !profile.lanShare, upstreamPort = SOCKS_PORT)
+                ShareBridge.startSync(localOnly = !profile.lanShare, upstreamPort = exitPort)
             if (!shareReady) {
                 DiagnosticsLog.e(TAG, "Proxy mode: the fixed local proxy ports could not be opened (see errors above).")
                 throw IllegalStateException(getString(R.string.err_proxy_ports))
@@ -1484,14 +1535,14 @@ class AetherVpnService : VpnService() {
             )
         } else {
             establishTun(profile)
-            startTun2Socks(profile, SOCKS_PORT)
+            startTun2Socks(profile, exitPort)
             // LAN sharing: if the user enabled it, expose the tunnel to other
             // devices on the same Wi-Fi/hotspot (HTTP + SOCKS5 bridge). Remote
             // clients must authenticate (1.2.9-r3, F-5), so load the credential
             // first.
             if (profile.lanShare) {
                 runCatching { ShareCredentials.ensure(this) }
-                ShareBridge.start(localOnly = false, upstreamPort = SOCKS_PORT)
+                ShareBridge.start(localOnly = false, upstreamPort = exitPort)
             }
         }
 
@@ -1513,8 +1564,8 @@ class AetherVpnService : VpnService() {
         // endpoint external apps connect to — so a dead bridge can no longer
         // hide behind a passing engine-port (1819) self-test.
         val diagPort =
-            if (profile.proxyMode) ShareBridge.socksPort.value ?: SOCKS_PORT
-            else SOCKS_PORT
+            if (profile.proxyMode) ShareBridge.socksPort.value ?: exitPort
+            else exitPort
         val healthy = probeOrFalse { Diagnostics.run(port = diagPort) }
         if (!healthy) {
             DiagnosticsLog.e(TAG, "Self-test failed — refusing to report Connected.")
@@ -1616,6 +1667,379 @@ class AetherVpnService : VpnService() {
         }
     }
 
+    // ------------------------------------------------------------------------
+    // 1.5.0 CUSTOM CONFIGS
+    //
+    // A custom config is run by a bundled Xray core (libxray.so) as a local
+    // SOCKS5 listener. Three placements:
+    //
+    //   SOLO   xray (direct)                                  -> TUN
+    //   FIRST  xray (direct)  <- engine --upstream xray       -> TUN  (Config -> ...)
+    //   LAST   engine pipeline -> xray dialerProxy=engine     -> TUN  (... -> Config)
+    //
+    // Xray is a child process of this app, so - like the engine - it sits
+    // outside the VPN (applyAppFilter excludes this package) and never loops
+    // back into its own tunnel.
+    // ------------------------------------------------------------------------
+
+    private suspend fun connectCustom(profile: ConnectionProfile, selection: CustomSelection) {
+        val cfg = selection.config
+        val mode = selection.mode
+        if (cfg.isExpired()) throw IllegalStateException(getString(R.string.cc_err_expired))
+        if (cfg.mobileOnly && !onMobileData()) {
+            throw IllegalStateException(getString(R.string.cc_err_mobile_only))
+        }
+        val runner = XrayProcess(applicationInfo.nativeLibraryDir, filesDir)
+        if (!runner.available()) {
+            DiagnosticsLog.e(TAG, XrayProcess.MISSING)
+            throw IllegalStateException(getString(R.string.cc_err_no_core))
+        }
+        xray = runner
+        CustomSession.set(CustomSession.Info(cfg.chainLabel, mode))
+        DiagnosticsLog.i(
+            TAG,
+            "Custom config: ${cfg.protocol.short} (${cfg.format.name.lowercase()}) - chain " +
+                mode.label(cfg.chainLabel),
+        )
+        val base = mode.base
+        when (mode.placement) {
+            ChainPlacement.SOLO -> connectCustomSolo(profile, runner, cfg)
+            ChainPlacement.FIRST -> {
+                AetherController.setState(ConnectionState.Connecting)
+                updateNotification(getString(R.string.state_connecting))
+                cleanupNativeOnly()
+                val port = startXray(runner, cfg, dialVia = null)
+                val reachable = probeOrFalse {
+                    Diagnostics.runProxyStage(SOCKS_HOST, port, alive = { runner.isAlive() })
+                }
+                if (!reachable) {
+                    DiagnosticsLog.e(TAG, "The custom config opens no outbound connection.")
+                    throw IllegalStateException(getString(R.string.cc_err_unreachable))
+                }
+                DiagnosticsLog.i(TAG, "Custom config is up on $SOCKS_HOST:$port - the engine dials through it.")
+                val chained = profile.copy(upstreamProxy = "socks5://$SOCKS_HOST:$port")
+                if (base == null || base == ChainBase.PSIPHON) {
+                    connectPsiphonOnly(chained)
+                } else {
+                    connectEngineFlow(chained.copy(backend = base.backend ?: TransportBackend.AETHER))
+                }
+            }
+            ChainPlacement.LAST -> {
+                if (base == null || base == ChainBase.PSIPHON) {
+                    connectPsiphonOnly(profile)
+                } else {
+                    connectEngineFlow(profile.copy(backend = base.backend ?: TransportBackend.AETHER))
+                }
+            }
+        }
+    }
+
+    /** The custom config alone: no engine at all. */
+    private suspend fun connectCustomSolo(
+        profile: ConnectionProfile,
+        runner: XrayProcess,
+        cfg: CustomConfig,
+    ) {
+        AetherController.setState(ConnectionState.Connecting)
+        updateNotification(getString(R.string.state_connecting))
+        cleanupNativeOnly()
+        lockdownTunActive = false
+        val port = startXray(runner, cfg, dialVia = null)
+        val reachable = probeOrFalse {
+            Diagnostics.runProxyStage(SOCKS_HOST, port, alive = { runner.isAlive() })
+        }
+        if (!reachable) {
+            DiagnosticsLog.e(TAG, "The custom config opens no outbound connection.")
+            throw IllegalStateException(getString(R.string.cc_err_unreachable))
+        }
+        finishCustom(profile, port, graceMs = null) { runner.isAlive() }
+    }
+
+    /**
+     * `Config -> Psiphon` and `Psiphon -> Config`: the engine as plain Psiphon
+     * (`--psiphon-only`), behind the usual UDP-capable Psiphon front.
+     */
+    private suspend fun connectPsiphonOnly(profile: ConnectionProfile) {
+        AetherController.setState(ConnectionState.Connecting)
+        updateNotification(getString(R.string.state_connecting))
+        cleanupNativeOnly()
+        lockdownTunActive = false
+        withContext(Dispatchers.IO) { PsiphonBootstrap.prepare(this@AetherVpnService) }
+
+        val stage = profile.copy(
+            backend = TransportBackend.AETHER,
+            proxyMode = false,
+            lanShare = false,
+            routeBlock = "",
+            routeDirect = "",
+            chainedStage = true,
+            enginePsiphon = true,
+            enginePsiphonOnly = true,
+        )
+        if (!PortProbe.awaitClosed(SOCKS_HOST, SOCKS_PORT, PORT_RELEASE_WAIT_MS)) {
+            DiagnosticsLog.w(TAG, "Local port $SOCKS_PORT is still busy - starting anyway.")
+        }
+        DiagnosticsLog.i(TAG, "Launching engine as plain Psiphon on $SOCKS_HOST:$SOCKS_PORT")
+        engine = AetherProcess(applicationInfo.nativeLibraryDir, filesDir).also { it.start(stage) }
+
+        val transport = PsiphonTransport(
+            service = this,
+            region = profile.exitRegion,
+            engineAlive = { engine?.isAlive() == true },
+            localSocksPort = SOCKS_PORT,
+            frontPort = PortLease.chain,
+        )
+        externalTransport = transport
+        val frontRoutes = withContext(Dispatchers.IO) {
+            studio.cluvex.aether.core.SmartLists.frontRules(profile)
+        }
+        PsiphonSocksFront.setRoutes(frontRoutes)
+
+        val front = try {
+            transport.start()
+        } catch (e: PsiphonRegionFallback) {
+            DiagnosticsLog.w(TAG, e.message ?: "Psiphon could not serve the chosen exit - retrying automatically.")
+            cleanupNativeOnly()
+            connectPsiphonOnly(profile.copy(exitRegion = ""))
+            return
+        } catch (e: CancellationException) {
+            // CancellationException IS an IllegalStateException. Without this
+            // clause a Disconnect pressed while Psiphon was still connecting was
+            // caught below, logged as "Psiphon could not reach its network
+            // directly: StandaloneCoroutine was cancelled" and re-thrown as an
+            // ordinary error, which broke structured cancellation of the session.
+            throw e
+        } catch (e: IllegalStateException) {
+            // `Psiphon -> Config` is the only chain in which Psiphon has to reach
+            // its own network with nothing underneath it. When that is what failed,
+            // say so and name the chain that does work on this network, instead of
+            // reporting the generic "the engine exited" the user cannot act on.
+            if (customSelection?.mode?.placement == ChainPlacement.LAST) {
+                DiagnosticsLog.e(TAG, "Psiphon could not reach its network directly: ${e.message}")
+                throw IllegalStateException(getString(R.string.cc_err_psiphon_direct))
+            }
+            throw e
+        }
+        val port = customExit(front)
+        val runner = xray
+        finishCustom(profile, port, graceMs = Diagnostics.EXTERNAL_GRACE_MS) {
+            engine?.isAlive() == true && transport.isAlive() && (runner?.isAlive() ?: true)
+        }
+    }
+
+    /**
+     * For a chain whose LAST hop is the custom config: starts Xray dialling
+     * through [enginePort] and returns Xray's port, which is then what tun2socks
+     * and the self-test use. Any other session gets [enginePort] back unchanged.
+     */
+    private suspend fun customExit(enginePort: Int): Int {
+        val selection = customSelection ?: return enginePort
+        if (selection.mode.placement != ChainPlacement.LAST) return enginePort
+        val runner = xray ?: throw IllegalStateException(getString(R.string.cc_err_no_core))
+        val port = startXray(runner, selection.config, dialVia = enginePort)
+        val reachable = probeOrFalse {
+            Diagnostics.runProxyStage(SOCKS_HOST, port, alive = { runner.isAlive() })
+        }
+        if (!reachable) {
+            DiagnosticsLog.e(TAG, "The custom config answers nothing through $SOCKS_HOST:$enginePort.")
+            throw IllegalStateException(getString(R.string.cc_err_unreachable))
+        }
+        DiagnosticsLog.i(TAG, "Custom config is the exit: $SOCKS_HOST:$port -> $SOCKS_HOST:$enginePort")
+        PingMonitor.setTunnelPort(port)
+        return port
+    }
+
+    /**
+     * True when the hop the config is dialled through is an onion/obfuscated one
+     * (Tor or Psiphon), i.e. a hop where opening a new connection is expensive.
+     */
+    private fun slowChainBehindEngine(): Boolean {
+        val mode = customSelection?.mode ?: return false
+        if (mode.placement != ChainPlacement.LAST) return false
+        return when (mode.base) {
+            null -> false
+            ChainBase.AETHER -> false
+            else -> true
+        }
+    }
+
+    private suspend fun startXray(runner: XrayProcess, cfg: CustomConfig, dialVia: Int?): Int {
+        stopXrayOnly()
+        val avoid = setOf(
+            PortLease.socks, PortLease.torSocks, PortLease.torFront, PortLease.chain,
+            PortLease.psiphon, ShareBridge.SOCKS_SHARE_PORT, ShareBridge.HTTP_SHARE_PORT,
+        ) + listOfNotNull(dialVia)
+        // 1.5.0-r2: a config dialled THROUGH Tor or Psiphon reuses one connection
+        // for every flow (Mux). Without it each flow pays a fresh Tor stream and a
+        // fresh handshake to the server, which is the whole of the `Tor -> Config`
+        // slowness. A direct (first-hop or solo) config keeps Mux off: there the
+        // per-flow cost is a local dial and Mux would only add head-of-line delay.
+        val mux = if (dialVia != null && slowChainBehindEngine()) XrayConfigBuilder.SLOW_CHAIN_MUX else 0
+        val (port, config) = withContext(Dispatchers.IO) {
+            val picked = XrayProcess.pickPort(avoid)
+            val dns = if (dialVia == null) underlyingDns() else emptyList()
+            picked to XrayConfigBuilder.build(
+                outbound = cfg.outbound,
+                listenPort = picked,
+                dialVia = dialVia,
+                networkDns = dns,
+                muxConcurrency = mux,
+            )
+        }
+        withContext(Dispatchers.IO) { runner.start(config, "session") }
+        val open = PortProbe.awaitOpen(SOCKS_HOST, port, XRAY_START_TIMEOUT_MS) { runner.isAlive() }
+        if (!open) {
+            DiagnosticsLog.e(TAG, "Xray did not open $SOCKS_HOST:$port (see the xray lines above).")
+            runner.stop()
+            throw IllegalStateException(getString(R.string.cc_err_core_failed))
+        }
+        DiagnosticsLog.i(
+            TAG,
+            "Xray core listening on $SOCKS_HOST:$port" + (dialVia?.let { " (dialling via $it)" } ?: ""),
+        )
+        watchXray(runner, config)
+        return port
+    }
+
+    /** Restarts a crashed Xray on the same port (its config is unchanged), a few times. */
+    private fun watchXray(runner: XrayProcess, config: String) {
+        val generation = synchronized(xrayLock) { ++xrayGeneration }
+        xrayWatch = scope.launch(Dispatchers.IO) {
+            var restarts = 0
+            var healthySeconds = 0
+            while (true) {
+                delay(1_000L)
+                synchronized(xrayLock) {
+                    if (generation != xrayGeneration) return@launch
+                    if (runner.isAlive()) {
+                        if (++healthySeconds >= 120) restarts = 0
+                    } else if (restarts >= XRAY_MAX_RESTARTS) {
+                        DiagnosticsLog.e(TAG, "Xray keeps exiting - giving up on restarts.")
+                        return@launch
+                    } else {
+                        restarts++
+                        healthySeconds = 0
+                        DiagnosticsLog.w(TAG, "Xray exited - restarting it ($restarts/$XRAY_MAX_RESTARTS).")
+                        runCatching { runner.start(config, "session") }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * TUN (or proxy mode), self-test and liveness for a session whose exit was
+     * set up by the custom-config code itself (solo and the Psiphon chains).
+     */
+    private suspend fun finishCustom(
+        profile: ConnectionProfile,
+        port: Int,
+        graceMs: Long?,
+        alive: () -> Boolean,
+    ) {
+        if (profile.lanShare) runCatching { ShareCredentials.ensure(this) }
+        if (profile.proxyMode) {
+            check(ShareBridge.startSync(localOnly = !profile.lanShare, upstreamPort = port)) {
+                getString(R.string.err_proxy_ports)
+            }
+        } else {
+            establishTun(profile)
+            startTun2Socks(profile, port)
+            if (profile.lanShare) ShareBridge.start(localOnly = false, upstreamPort = port)
+        }
+
+        AetherController.setState(ConnectionState.Verifying)
+        updateNotification(getString(R.string.state_verifying))
+        val diagPort = if (profile.proxyMode) ShareBridge.socksPort.value ?: port else port
+        val healthy = probeOrFalse {
+            if (graceMs == null) Diagnostics.run(port = diagPort)
+            else Diagnostics.run(port = diagPort, graceMs = graceMs)
+        }
+        check(healthy) { getString(R.string.err_selftest) }
+
+        PingMonitor.setTunnelPort(port)
+        PingMonitor.reset()
+        AetherController.setState(ConnectionState.Connected("$SOCKS_HOST:$port"))
+        updateNotification(getString(R.string.state_connected))
+        DiagnosticsLog.i(TAG, "Custom-config tunnel ready on $SOCKS_HOST:$port.")
+
+        var dead = 0
+        var pipelineDead = 0
+        var nextProbe = SystemClock.elapsedRealtime() + PIPELINE_PROBE_INTERVAL_MS
+        while (currentScopeActive()) {
+            if (alive()) {
+                dead = 0
+            } else if (++dead >= CUSTOM_DEAD_CONFIRMATIONS) {
+                break
+            }
+            if (SystemClock.elapsedRealtime() >= nextProbe) {
+                val moving = dataPathIsMoving()
+                if (probeTunnelCycle(port) || moving) {
+                    pipelineDead = 0
+                    nextProbe = SystemClock.elapsedRealtime() + PIPELINE_PROBE_INTERVAL_MS
+                } else if (++pipelineDead >= PIPELINE_DEAD_CONFIRMATIONS) {
+                    DiagnosticsLog.w(TAG, "Rebuilding the session: the custom-config path carries nothing.")
+                    break
+                } else {
+                    DiagnosticsLog.w(
+                        TAG,
+                        "Custom-config path carries nothing ($pipelineDead/$PIPELINE_DEAD_CONFIRMATIONS).",
+                    )
+                    nextProbe = SystemClock.elapsedRealtime() + PIPELINE_PROBE_RETRY_MS
+                }
+            }
+            delay(1_000L)
+        }
+        if (currentScopeActive()) throw IllegalStateException(getString(R.string.cc_err_core_failed))
+    }
+
+    private fun stopXrayOnly() {
+        synchronized(xrayLock) {
+            xrayGeneration++
+            xrayWatch?.cancel()
+            xrayWatch = null
+            runCatching { xray?.stop() }
+        }
+    }
+
+    /** Everything the custom-config code started; a no-op for every other session. */
+    private fun stopCustom() {
+        stopXrayOnly()
+        xray = null
+        CustomSession.set(null)
+    }
+
+    /** The resolvers of the network the phone is really on (outside the VPN). */
+    private fun underlyingDns(): List<String> = runCatching {
+        val cm = getSystemService(android.net.ConnectivityManager::class.java)
+            ?: return@runCatching emptyList<String>()
+        val network = cm.activeNetwork ?: return@runCatching emptyList<String>()
+        val caps = cm.getNetworkCapabilities(network)
+        if (caps?.hasTransport(android.net.NetworkCapabilities.TRANSPORT_VPN) == true) {
+            return@runCatching emptyList<String>()
+        }
+        cm.getLinkProperties(network)?.dnsServers
+            ?.filterIsInstance<java.net.Inet4Address>()
+            ?.mapNotNull { it.hostAddress }
+            .orEmpty()
+    }.getOrDefault(emptyList())
+
+    /** True when the phone's real (non-VPN) internet path is mobile data. */
+    @Suppress("DEPRECATION")
+    private fun onMobileData(): Boolean = runCatching {
+        val cm = getSystemService(android.net.ConnectivityManager::class.java)
+            ?: return@runCatching true
+        val physical = cm.allNetworks.mapNotNull { cm.getNetworkCapabilities(it) }
+            .filter {
+                !it.hasTransport(android.net.NetworkCapabilities.TRANSPORT_VPN) &&
+                    it.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            }
+        val wifiOrWired = physical.any {
+            it.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI) ||
+                it.hasTransport(android.net.NetworkCapabilities.TRANSPORT_ETHERNET)
+        }
+        !wifiOrWired && physical.any { it.hasTransport(android.net.NetworkCapabilities.TRANSPORT_CELLULAR) }
+    }.getOrDefault(true)
     private fun currentScopeActive(): Boolean = runJob?.isActive ?: false
 
     /**
@@ -1879,6 +2303,7 @@ class AetherVpnService : VpnService() {
      * an Aether exit IP while the UI promised a Psiphon exit.
      */
     private fun startTun2Socks(profile: ConnectionProfile, socksPort: Int) {
+        activeForwardPort = socksPort
         if (profile.blockedApps.isNotEmpty()) {
             // PER-APP BLOCKING (1.2.4): hev-socks5-tunnel cannot filter per
             // UID, so a userspace filter bridge (merged into Aether's
@@ -1979,6 +2404,7 @@ class AetherVpnService : VpnService() {
         job?.cancel()
         stopJob = scope.launch(Dispatchers.IO) {
             cleanupNativeOnly()
+            stopCustom()
             // STALE-CIRCLES FIX (part 2): clear the finished session's results
             // right at disconnect, so the panel never carries green circles
             // from a dead session into the next connect.
@@ -2154,6 +2580,7 @@ class AetherVpnService : VpnService() {
         job?.cancel()
         stopJob = scope.launch(Dispatchers.IO) {
             cleanupForwardingOnly()
+            stopCustom()
             ensureLockdownTun(profile)
             lockdownTunActive = true
             Diagnostics.resetChecks()
@@ -2167,6 +2594,7 @@ class AetherVpnService : VpnService() {
 
     /** Stops sharing, the forwarder and the engine but deliberately KEEPS [tun]. */
     private fun cleanupForwardingOnly() {
+        activeForwardPort = 0
         try {
             ShareBridge.stop()
         } catch (_: Throwable) {
@@ -2224,6 +2652,7 @@ class AetherVpnService : VpnService() {
     }
 
     private fun cleanupNativeOnly() {
+        activeForwardPort = 0
         // Stop sharing first: without the tunnel the bridge would leak direct.
         try {
             ShareBridge.stop()
@@ -2315,6 +2744,7 @@ class AetherVpnService : VpnService() {
      */
     fun killNativesFromCrashHandler() {
         runCatching { cleanupNativeOnly() }
+        runCatching { stopCustom() }
     }
 
     override fun onRevoke() {
@@ -2326,6 +2756,7 @@ class AetherVpnService : VpnService() {
         if (live === this) live = null
         runJob?.cancel()
         cleanupNativeOnly()
+        stopCustom()
         // 1.3.1: the service can also die WITHOUT going through stopEverything -
         // task removal, a system kill, the user revoking VPN consent. Every one of
         // those left the widget showing whatever transient text it had last. The
@@ -2378,6 +2809,17 @@ class AetherVpnService : VpnService() {
     }
 
     companion object {
+        /**
+         * The local SOCKS5 port the device's traffic is forwarded to while a
+         * session runs, 0 otherwise. The app itself is excluded from its own VPN,
+         * so app-side downloads that must not leave on the bare network (the
+         * custom-config subscription fetch) dial through this port instead.
+         */
+        @Volatile
+        @JvmStatic
+        var activeForwardPort: Int = 0
+            internal set
+
         const val ACTION_CONNECT = "studio.cluvex.aether.CONNECT"
         const val ACTION_DISCONNECT = "studio.cluvex.aether.DISCONNECT"
         const val EXTRA_PROFILE = "profile"
@@ -2581,5 +3023,14 @@ class AetherVpnService : VpnService() {
          * budget before the hardened second pass is even tried.
          */
         private const val FIRST_PASS_MAX_MS = 75_000L
+
+        /** 1.5.0: how long Xray may take to open its local SOCKS5 port. */
+        private const val XRAY_START_TIMEOUT_MS = 15_000L
+
+        /** 1.5.0: automatic Xray restarts within one session before giving up. */
+        private const val XRAY_MAX_RESTARTS = 5
+
+        /** 1.5.0: consecutive dead checks (1 s apart) before a custom session is rebuilt. */
+        private const val CUSTOM_DEAD_CONFIRMATIONS = 5
     }
 }

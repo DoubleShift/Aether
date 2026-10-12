@@ -144,6 +144,16 @@ enum class AiTopic(
             "WARP*2 through Tor.",
         "protocol",
     ),
+    GOOL_MODE(
+        "goolMode",
+        "Gool mode",
+        "Which WARP*2/gool the engine builds (engine core 2.3.0). 'Modern' is the core's " +
+            "default --gool: a WireGuard WARP tunnel carried inside a MASQUE one, with its " +
+            "own identity registered from inside WARP, so the session leaves from a " +
+            "foreign address. 'Classic' is --gool-classic, the older gool: WireGuard " +
+            "tunneled inside WireGuard. Only used when the protocol is WARP*2, or when " +
+            "Smart picks it.",
+    ),
     SCAN_MODE(
         "scanMode",
         "Scan mode",
@@ -415,6 +425,26 @@ enum class AiTopic(
             "them changes the handshake's fingerprint, which occasionally slips past a " +
             "DPI box tuned for the default list. Empty uses the engine default.",
         "tlsGroups",
+    ),
+    TLS_CIPHERS(
+        "tlsCiphers",
+        "TLS 1.2 ciphers",
+        "The TLS 1.2 cipher suites the engine's ClientHello offers, as a BoringSSL " +
+            "cipher string with names separated by ':' (engine --tls-ciphers, core " +
+            "2.3.0). They are listed after the TLS 1.3 suites, which stay as they are, " +
+            "and HTTP/3 lists none because QUIC offers TLS 1.3 alone, so this only " +
+            "affects MASQUE over HTTP/2, the WARP API calls and the ECH lookup. Empty " +
+            "uses Chrome's own rule, ALL:!aPSK:!ECDSA+SHA1:!3DES. A name the engine " +
+            "does not know stops it as it starts.",
+    ),
+    DISABLE_GREASE(
+        "disableGrease",
+        "Disable GREASE",
+        "Leaves the GREASE values (RFC 8701) out of the cipher suites, extensions, " +
+            "groups, key shares and versions of the engine's ClientHello (engine " +
+            "--disable-grease, core 2.3.0). Chrome sends GREASE, so this is off by " +
+            "default; turning it on makes the handshake stop looking like Chrome's, " +
+            "which only helps against a middlebox that chokes on GREASE.",
     ),
     VALIDATE_SECS(
         "validateSecs",

@@ -12,6 +12,7 @@ import androidx.compose.material.icons.rounded.Apps
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.Bolt
+import androidx.compose.material.icons.rounded.Campaign
 import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Dns
@@ -22,6 +23,7 @@ import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Public
 import androidx.compose.material.icons.rounded.RestartAlt
+import androidx.compose.material.icons.rounded.Route
 import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material.icons.rounded.Tune
@@ -60,6 +62,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import studio.cluvex.aether.R
+import studio.cluvex.aether.ui.announcements.AnnouncementsPage
 import studio.cluvex.aether.ai.AiSession
 import studio.cluvex.aether.ai.AiTopic
 import studio.cluvex.aether.core.AccessToken
@@ -71,6 +74,7 @@ import studio.cluvex.aether.model.ConnectionProfile
 import studio.cluvex.aether.model.ConnectionState
 import studio.cluvex.aether.model.CoreLogLevel
 import studio.cluvex.aether.model.EndpointMode
+import studio.cluvex.aether.model.GoolMode
 import studio.cluvex.aether.model.ExternalKind
 import studio.cluvex.aether.model.IpVersion
 import studio.cluvex.aether.model.Noize
@@ -142,6 +146,12 @@ enum class SettingsRoute {
     DIAGNOSTICS,
     SHARE,
     ABOUT,
+
+    /** 1.5.0: the user's own V2Ray/Xray and NapsternetV configs, and their chain. */
+    CUSTOM_CONFIGS,
+
+    /** 1.5.0: archive of the "What's new" announcements (پیام‌ها و اطلاعیه‌ها). */
+    ANNOUNCEMENTS,
 }
 
 /**
@@ -227,6 +237,8 @@ fun SettingsHost(
         SettingsRoute.SECURITY -> SecurityPage(profile, editable, onProfileChange, back, modifier)
         SettingsRoute.ENGINE -> EnginePage(profile, editable, onProfileChange, back, modifier)
         SettingsRoute.APPEARANCE -> AppearancePage(back, modifier)
+        SettingsRoute.CUSTOM_CONFIGS -> CustomConfigsPage(editable, back, modifier)
+        SettingsRoute.ANNOUNCEMENTS -> AnnouncementsPage(back, modifier)
         SettingsRoute.DIAGNOSTICS -> PanelPage(stringResource(R.string.diag_title), back, modifier) {
             DiagnosticsPanel(startExpanded = true)
         }
@@ -316,6 +328,14 @@ private fun SettingsHomePage(
                     value = backendShortLabel(profile.backend),
                     onClick = { onOpen(SettingsRoute.CONNECTION) },
                     aiTopic = AiTopic.BACKEND,
+                )
+                RowDivider()
+                SettingsNavRow(
+                    title = stringResource(R.string.cc_title),
+                    summary = stringResource(R.string.cc_nav_desc),
+                    icon = Icons.Rounded.Route,
+                    value = customConfigsValue(),
+                    onClick = { onOpen(SettingsRoute.CUSTOM_CONFIGS) },
                 )
                 RowDivider()
                 SettingsNavRow(
@@ -472,6 +492,13 @@ private fun SettingsHomePage(
                         },
                     )
                 }
+                RowDivider()
+                SettingsNavRow(
+                    title = stringResource(R.string.announcements_title),
+                    summary = stringResource(R.string.announcements_desc),
+                    icon = Icons.Rounded.Campaign,
+                    onClick = { onOpen(SettingsRoute.ANNOUNCEMENTS) },
+                )
                 RowDivider()
                 SettingsNavRow(
                     title = stringResource(R.string.about_title),
@@ -707,6 +734,33 @@ private fun ConnectionPage(
                             },
                         ),
                         icon = Icons.Rounded.Info,
+                    )
+                }
+            }
+            // Core 2.3.0: `--gool` became WireGuard inside MASQUE and the older
+            // WireGuard-inside-WireGuard moved to `--gool-classic`. Shown for WARP×2,
+            // and for Smart too because Smart can resolve to gool. Hidden in the
+            // reverse chain, where the engine refuses gool altogether.
+            if ((profile.protocol == Protocol.GOOL || profile.protocol == Protocol.AUTO) &&
+                profile.backend.torMode != TorMode.REVERSE
+            ) {
+                RowDivider(inset = false)
+                SettingsBlock(
+                    title = stringResource(R.string.gool_mode_title),
+                    helper = stringResource(
+                        when (profile.goolMode) {
+                            GoolMode.MODERN -> R.string.gool_mode_modern_desc
+                            GoolMode.CLASSIC -> R.string.gool_mode_classic_desc
+                        },
+                    ),
+                    aiTopic = AiTopic.GOOL_MODE,
+                ) {
+                    SegmentedSelector(
+                        options = GoolMode.entries,
+                        selected = profile.goolMode,
+                        onSelect = { onProfileChange(profile.copy(goolMode = it)) },
+                        label = { goolModeLabel(it) },
+                        enabled = editable && profile.backend.usesAetherEngine,
                     )
                 }
             }
@@ -1494,6 +1548,39 @@ private fun EnginePage(
         }
     }
 
+    // Core 2.3.0 ClientHello fingerprint options. Both default to the engine's
+    // own behaviour (Chrome's cipher list, GREASE on), so leaving them alone
+    // launches the engine exactly as before.
+    settingsSection {
+        GroupCaption(stringResource(R.string.cat_group_tls))
+        SettingsGroup {
+            SettingsBlock(aiTopic = AiTopic.TLS_CIPHERS) {
+                LtrOutlinedTextField(
+                    value = profile.tlsCiphers,
+                    onValueChange = { onProfileChange(profile.copy(tlsCiphers = it.trim())) },
+                    enabled = editable,
+                    singleLine = true,
+                    isError = profile.tlsCiphers.isNotBlank() &&
+                        profile.sanitizedTlsCiphers() == null,
+                    label = { Text(stringResource(R.string.tls_ciphers_label)) },
+                    placeholder = { Text(ConnectionProfile.DEFAULT_TLS_CIPHERS) },
+                    supportingText = { Text(stringResource(R.string.tls_ciphers_help)) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            RowDivider(inset = false)
+            SettingsSwitchRow(
+                title = stringResource(R.string.disable_grease_title),
+                summary = stringResource(R.string.disable_grease_desc),
+                checked = profile.disableGrease,
+                enabled = editable,
+                onCheckedChange = { onProfileChange(profile.copy(disableGrease = it)) },
+                aiTopic = AiTopic.DISABLE_GREASE,
+            )
+        }
+        GroupFooter(stringResource(R.string.tls_group_footer))
+    }
+
     settingsSection {
         GroupCaption(stringResource(R.string.cat_group_tuning))
         SettingsGroup {
@@ -1697,6 +1784,12 @@ private fun protocolLabel(protocol: Protocol): String = when (protocol) {
     Protocol.WIREGUARD -> stringResource(R.string.protocol_wireguard)
     Protocol.GOOL -> stringResource(R.string.protocol_gool)
     Protocol.MIM -> stringResource(R.string.protocol_mim)
+}
+
+@Composable
+private fun goolModeLabel(mode: GoolMode): String = when (mode) {
+    GoolMode.MODERN -> stringResource(R.string.gool_mode_modern)
+    GoolMode.CLASSIC -> stringResource(R.string.gool_mode_classic)
 }
 
 @Composable

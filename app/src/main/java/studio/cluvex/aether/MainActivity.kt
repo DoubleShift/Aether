@@ -41,6 +41,7 @@ import studio.cluvex.aether.model.isConnected
 import studio.cluvex.aether.ui.HomeScreen
 import studio.cluvex.aether.ui.LoginCodeDialog
 import studio.cluvex.aether.ui.OnboardingScreen
+import studio.cluvex.aether.ui.announcements.WhatsNewGate
 import studio.cluvex.aether.ui.theme.AetherTheme
 import java.io.File
 
@@ -309,6 +310,11 @@ class MainActivity : ComponentActivity() {
                             },
                             onToggleConnection = { toggleConnection(state) },
                         )
+                        // 1.5.0: "What's new" dialog on the first launch after a
+                        // fresh install or an upgrade (until the user ticks
+                        // "don't show again" for this version). Only after
+                        // onboarding, so it never stacks on top of the pager.
+                        WhatsNewGate()
                     }
                 }
             }

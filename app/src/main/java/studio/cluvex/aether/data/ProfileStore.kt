@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.map
 import studio.cluvex.aether.model.ConnectionProfile
 import studio.cluvex.aether.model.CoreLogLevel
 import studio.cluvex.aether.model.EndpointMode
+import studio.cluvex.aether.model.GoolMode
 import studio.cluvex.aether.model.IpVersion
 import studio.cluvex.aether.model.Noize
 import studio.cluvex.aether.model.Protocol
@@ -74,6 +75,10 @@ class ProfileStore(private val context: Context) {
         val fragmentDelay = stringPreferencesKey("fragmentDelay")
         val noDataCheck = booleanPreferencesKey("noDataCheck")
         val tlsGroups = stringPreferencesKey("tlsGroups")
+        // Added in 1.5.0 (engine core 2.3.0)
+        val tlsCiphers = stringPreferencesKey("tlsCiphers")
+        val disableGrease = booleanPreferencesKey("disableGrease")
+        val goolMode = stringPreferencesKey("goolMode")
         val validateSecs = intPreferencesKey("validateSecs")
         val reconnectSecs = intPreferencesKey("reconnectSecs")
         val noProfileRetry = booleanPreferencesKey("noProfileRetry")
@@ -166,6 +171,12 @@ class ProfileStore(private val context: Context) {
             fragmentDelay = prefs[Keys.fragmentDelay] ?: "",
             noDataCheck = prefs[Keys.noDataCheck] ?: false,
             tlsGroups = prefs[Keys.tlsGroups] ?: "",
+            // 1.5.0: absent keys (every profile saved before this build) fall back
+            // to the engine defaults, i.e. exactly what those profiles launched with.
+            tlsCiphers = prefs[Keys.tlsCiphers] ?: "",
+            disableGrease = prefs[Keys.disableGrease] ?: false,
+            goolMode = prefs[Keys.goolMode]
+                ?.let { runCatching { GoolMode.valueOf(it) }.getOrNull() } ?: GoolMode.MODERN,
             validateSecs = prefs[Keys.validateSecs] ?: 0,
             reconnectSecs = prefs[Keys.reconnectSecs] ?: 0,
             noProfileRetry = prefs[Keys.noProfileRetry] ?: false,
@@ -235,6 +246,9 @@ class ProfileStore(private val context: Context) {
             prefs[Keys.fragmentDelay] = profile.fragmentDelay
             prefs[Keys.noDataCheck] = profile.noDataCheck
             prefs[Keys.tlsGroups] = profile.tlsGroups
+            prefs[Keys.tlsCiphers] = profile.tlsCiphers
+            prefs[Keys.disableGrease] = profile.disableGrease
+            prefs[Keys.goolMode] = profile.goolMode.name
             prefs[Keys.validateSecs] = profile.validateSecs
             prefs[Keys.reconnectSecs] = profile.reconnectSecs
             prefs[Keys.noProfileRetry] = profile.noProfileRetry

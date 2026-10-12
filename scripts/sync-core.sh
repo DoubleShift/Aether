@@ -109,7 +109,11 @@ GH_WEB="${CORE_GIT_BASE:-${SCHEME}://${GH_HOST}}"
 # 1.4.0: raised to 2.1.0 - Psiphon moved INTO the engine (psiphon.rs, the
 # psiphon-tunnel-core console client) and the app's own Psiphon AAR was removed,
 # so a core below 2.1.0 has no Psiphon at all for the app's two Psiphon modes.
-BASELINE="2.1.0"
+# 1.5.0: raised to 2.3.0 - Chrome-shaped TLS on every handshake (--tls-ciphers,
+# --disable-grease), ECH on the WARP API calls, --enroll-address, AAAA fallback in
+# the in-tunnel resolver and Psiphon's own -serverList. The app's engine patches
+# were rebased onto 2.3.0 three-way (see .upstream-baseline/README.txt).
+BASELINE="2.3.0"
 
 # App-specific patches carried on top of the upstream engine. These are MERGED
 # (three-way) onto the new upstream sources, never blind-copied over them.

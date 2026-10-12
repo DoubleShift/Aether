@@ -313,6 +313,14 @@ jobs:
       - name: Build Psiphon (the engine's console client)
         run: bash scripts/build-natives.sh psiphon
 
+      # 1.5.0: custom configs (V2Ray/Xray links, Xray JSON, NapsternetV .npvt)
+      # run in Xray-core, shipped as libxray.so. Official XTLS release binaries
+      # at a pinned version, verified against pinned SHA-256 sums (see
+      # build_xray in build-natives.sh). NOT allowed to fail: without it every
+      # custom-config chain would fail at connect time.
+      - name: Fetch Xray core (custom configs)
+        run: bash scripts/build-natives.sh xray
+
       # The engine build is the one step an automatic core upgrade can break:
       # upstream may add a struct field or a function parameter at any time and
       # no textual merge can guarantee the result still compiles (core 1.4.0
@@ -840,6 +848,8 @@ jobs:
                 || { echo "ERROR: $apk lacks the aethertun JNI bridge for $abi"; exit 1; }
               grep -qx -- "lib/${abi}/libpsiphon.so" <<< "$entries" \
                 || { echo "ERROR: $apk lacks libpsiphon.so for $abi (Psiphon modes would not work)"; exit 1; }
+              grep -qx -- "lib/${abi}/libxray.so" <<< "$entries" \
+                || { echo "ERROR: $apk lacks libxray.so for $abi (custom configs would not work)"; exit 1; }
               # ---------------------------------------------------------- r5
               # THE GATE THAT WOULD HAVE SAVED THE r4 ROUND.
               # The engine inside the APK must carry THIS revision's build
@@ -855,6 +865,29 @@ jobs:
                 exit 1
               fi
               echo "  $abi engine stamp OK: AETHER-BUILD-STAMP:${PATCH_LEVEL}"
+              # ------------------------------------------------------- 1.5.0
+              # THE GATE THAT WOULD HAVE SAVED THE FIRST 1.5.0 BUILD.
+              # Core 2.3.0 (boring 5.2) links libc++_shared.so; the APK did not
+              # carry it and Android refused to start the engine in all six
+              # modes. Every DT_NEEDED of the shipped engine must be an Android
+              # system library or sit beside it in the same lib/<abi>/ folder.
+              READELF="$(ls "${ANDROID_NDK_HOME:-/nonexistent}"/toolchains/llvm/prebuilt/*/bin/llvm-readelf 2>/dev/null | head -n1 || true)"
+              [ -n "$READELF" ] || READELF="$(command -v readelf || true)"
+              [ -n "$READELF" ] || { echo "ERROR: no readelf to check engine dependencies"; exit 1; }
+              needed="$("$READELF" -d /tmp/libaether-check.so | sed -n 's/.*Shared library: \[\([^]]*\)\].*/\1/p')"
+              [ -n "$needed" ] || { echo "ERROR: could not read the engine's dynamic section ($abi)"; exit 1; }
+              while IFS= read -r dep; do
+                [ -n "$dep" ] || continue
+                case "$dep" in
+                  libc.so|libdl.so|liblog.so|libm.so|libandroid.so|libz.so) ;;
+                  *)
+                    grep -qx -- "lib/${abi}/${dep}" <<< "$entries" \
+                      || { echo "ERROR: $apk: libaether.so ($abi) needs $dep, which the APK does not contain."; \
+                           echo "       The engine would die with CANNOT LINK EXECUTABLE in every mode."; exit 1; }
+                    echo "  $abi engine dependency packaged: $dep"
+                    ;;
+                esac
+              done <<< "$needed"
               rm -f /tmp/libaether-check.so
             done
             echo "Verified native cores in $apk (${abis[*]})"

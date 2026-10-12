@@ -1,9 +1,9 @@
 # Final package status
 
-- Version: 1.4.0
-- Base versionCode: 16
-- App patch level (`PATCHLEVEL`, stamped into `libaether.so`): 1.4.0
-- Engine core: 2.1.0 (Psiphon runs inside the engine, `libpsiphon.so`)
+- Version: 1.5.0
+- Base versionCode: 18
+- App patch level (`PATCHLEVEL`, stamped into `libaether.so`): 1.5.0
+- Engine core: 2.3.0 (Psiphon runs inside the engine, `libpsiphon.so`)
 - Backends: Aether, Aether -> Psiphon (chained), Tor, Aether -> Tor,
   Tor -> Psiphon, Tor -> Aether
 - Protocols: WireGuard, MASQUE, GOOL, WARP-in-WARP, MASQUE-in-MASQUE (`--mim`)
@@ -19,6 +19,7 @@
   not a leanback UI; D-pad traversal is not designed for)
 - Archive integrity: `SOURCE_MANIFEST.sha256` — regenerated for this package, see
   the caveat at the bottom
+- Security audit (1.5.0): `docs/SECURITY_AUDIT_1.5.0.md` — 92/100 (English + Persian)
 - Security audit (1.4.0): `docs/SECURITY_AUDIT_1.4.0.md` — 92/100
 - Security audit (1.3.0): `docs/SECURITY_AUDIT_1.3.0.md` — 88/100 audited,
   93/100 after the seven remediations shipped in the same build

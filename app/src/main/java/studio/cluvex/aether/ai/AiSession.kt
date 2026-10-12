@@ -6,13 +6,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.channels.BufferOverflow
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.conflate
-import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import studio.cluvex.aether.core.DiagnosticsLog
@@ -190,21 +187,13 @@ object AiSession {
     /**
      * Debounced key writes. See [setKey].
      */
-    private val keySaves = MutableSharedFlow<String>(
-        replay = 1,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST,
-    )
+    private var keySaveJob: Job? = null
 
     /** Call once from `Application.onCreate`. Idempotent. */
     fun attach(context: Context) {
         if (store != null) return
         val created = GeminiStore(context.applicationContext)
         store = created
-        scope.launch {
-            keySaves.conflate().debounce(KEY_SAVE_DEBOUNCE_MS).collect { pending ->
-                created.saveKey(pending)
-            }
-        }
         scope.launch {
             created.settings.collect { loaded ->
                 _settings.value = loaded
@@ -237,15 +226,29 @@ object AiSession {
      * [studio.cluvex.aether.MainActivity].
      */
     fun setKey(key: String) {
+        val trimmed = key.trim()
         _probe.value = AiProbe.Idle
-        if (key.isBlank()) {
-            scope.launch {
+        _settings.update { current ->
+            val changed = trimmed != current.apiKey
+            current.copy(
+                apiKey = trimmed,
+                model = if (changed) "" else current.model,
+                discoveredModels = if (changed) emptyList() else current.discoveredModels,
+                modelUserPicked = if (changed) false else current.modelUserPicked,
+            )
+        }
+        keySaveJob?.cancel()
+        if (trimmed.isBlank()) {
+            keySaveJob = scope.launch {
                 store?.forget()
                 _models.value = emptyList()
             }
             return
         }
-        keySaves.tryEmit(key)
+        keySaveJob = scope.launch {
+            kotlinx.coroutines.delay(KEY_SAVE_DEBOUNCE_MS)
+            store?.saveKey(trimmed)
+        }
     }
 
     fun setModel(id: String) {
@@ -265,6 +268,10 @@ object AiSession {
     }
 
     fun forget() {
+        keySaveJob?.cancel()
+        _settings.update {
+            it.copy(apiKey = "", model = "", discoveredModels = emptyList(), modelUserPicked = false)
+        }
         scope.launch {
             store?.forget()
             _models.value = emptyList()
