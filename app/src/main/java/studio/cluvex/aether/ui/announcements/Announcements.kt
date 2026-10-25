@@ -1,5 +1,7 @@
 package studio.cluvex.aether.ui.announcements
 
+import android.content.res.Configuration
+
 /**
  * The announcements shown in the "What's new" dialog and kept in
  * Settings → پیام‌ها و اطلاعیه‌ها.
@@ -157,4 +159,28 @@ object Announcements {
     /** What the automatic dialog shows: this version's news, else the newest. */
     fun forVersion(versionName: String): Announcement =
         all.firstOrNull { it.version == versionName } ?: all.first()
+
+    /**
+     * True when [languageTag] ("zh", "zh-CN", …) reads the Chinese copy in
+     * [AnnouncementsZh] instead of the Persian text above.
+     */
+    private fun isChinese(languageTag: String): Boolean =
+        languageTag.substringBefore('-').lowercase() == "zh"
+
+    /** [forVersion] in the copy for [languageTag]. */
+    fun localized(versionName: String, languageTag: String): Announcement =
+        if (isChinese(languageTag)) AnnouncementsZh.forVersion(versionName) else forVersion(versionName)
+
+    /** [all] in the copy for [languageTag], so the archive list is localized too. */
+    fun localizedAll(languageTag: String): List<Announcement> =
+        if (isChinese(languageTag)) AnnouncementsZh.all else all
 }
+
+/**
+ * The language tag the announcements are rendered in, e.g. "zh", "fa", "en".
+ *
+ * [Configuration.locales] is a [android.os.LocaleList], which is not an
+ * `Iterable`, so the first entry has to be read by index.
+ */
+fun Configuration.primaryLanguage(): String =
+    if (locales.isEmpty()) "en" else locales[0].language

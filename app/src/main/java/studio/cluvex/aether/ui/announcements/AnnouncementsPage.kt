@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import studio.cluvex.aether.R
 import studio.cluvex.aether.ui.settings.GroupFooter
@@ -25,11 +26,15 @@ import studio.cluvex.aether.ui.settings.settingsSection
 @Composable
 fun AnnouncementsPage(onBack: () -> Unit, modifier: Modifier = Modifier) {
     var openVersion by rememberSaveable { mutableStateOf<String?>(null) }
+    // The archive lists the same announcements as the launch dialog, so it has to
+    // follow the same language: Chinese builds must not list Persian titles.
+    val language = LocalConfiguration.current.primaryLanguage()
+    val items = Announcements.localizedAll(language)
 
     SettingsScaffold(stringResource(R.string.announcements_title), onBack, modifier) {
         settingsSection {
             SettingsGroup {
-                Announcements.all.forEachIndexed { index, item ->
+                items.forEachIndexed { index, item ->
                     if (index > 0) RowDivider()
                     SettingsNavRow(
                         title = item.shortTitle,
@@ -43,7 +48,7 @@ fun AnnouncementsPage(onBack: () -> Unit, modifier: Modifier = Modifier) {
         }
     }
 
-    Announcements.all.firstOrNull { it.version == openVersion }?.let { item ->
+    items.firstOrNull { it.version == openVersion }?.let { item ->
         WhatsNewDialog(
             announcement = item,
             showDontShowAgain = false,

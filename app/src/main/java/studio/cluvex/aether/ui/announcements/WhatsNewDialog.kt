@@ -54,11 +54,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -71,6 +73,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import studio.cluvex.aether.BuildConfig
+import studio.cluvex.aether.R
 import studio.cluvex.aether.data.AnnouncementStore
 import studio.cluvex.aether.ui.theme.Vazirmatn
 
@@ -121,7 +124,7 @@ fun WhatsNewGate() {
     LaunchedEffect(Unit) { store.markLaunched() }
     if (visible) {
         WhatsNewDialog(
-            announcement = Announcements.forVersion(BuildConfig.VERSION_NAME),
+            announcement = Announcements.localized(BuildConfig.VERSION_NAME, uiLanguage()),
             showDontShowAgain = true,
             onDismiss = { dontShowAgain ->
                 store.onDismissed(dontShowAgain)
@@ -159,8 +162,10 @@ fun WhatsNewDialog(
             dismissOnClickOutside = false,
         ),
     ) {
-        // The whole dialog is Persian, so it is RTL regardless of the app language.
-        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+        // Persian runs right to left; Chinese and English keep the LTR the app
+        // itself is using, so the dialog is never mirrored for them.
+        val direction = if (uiLanguage() == "fa") LayoutDirection.Rtl else LayoutDirection.Ltr
+        CompositionLocalProvider(LocalLayoutDirection provides direction) {
             Surface(
                 shape = RoundedCornerShape(20.dp),
                 color = NewsColors.Background,
@@ -209,18 +214,18 @@ private fun DialogHeader(version: String, onClose: () -> Unit) {
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "📢 تازه‌های نسخهٔ ${ltr(version)}",
-                style = rtlStyle(17.sp, NewsColors.Text, lineHeight = 26.sp),
+                text = stringResource(R.string.whats_new_title, ltr(version)),
+                style = newsStyle(17.sp, NewsColors.Text, lineHeight = 26.sp),
             )
             Text(
-                text = "پیام‌ها و اطلاعیه‌های اتر",
-                style = rtlStyle(12.5.sp, NewsColors.TextSecondary, lineHeight = 20.sp),
+                text = stringResource(R.string.whats_new_subtitle),
+                style = newsStyle(12.5.sp, NewsColors.TextSecondary, lineHeight = 20.sp),
             )
         }
         IconButton(onClick = onClose) {
             Icon(
                 imageVector = Icons.Rounded.Close,
-                contentDescription = "بستن",
+                contentDescription = stringResource(R.string.whats_new_close),
                 tint = NewsColors.TextSecondary,
             )
         }
@@ -260,8 +265,8 @@ private fun DialogFooter(
                     modifier = Modifier.padding(12.dp),
                 )
                 Text(
-                    text = "دیگر این پیام را نمایش نده",
-                    style = rtlStyle(14.sp, NewsColors.TextSecondary, lineHeight = 22.sp),
+                    text = stringResource(R.string.whats_new_dont_show_again),
+                    style = newsStyle(14.sp, NewsColors.TextSecondary, lineHeight = 22.sp),
                 )
             }
             Spacer(Modifier.height(6.dp))
@@ -278,8 +283,9 @@ private fun DialogFooter(
                 .height(48.dp),
         ) {
             Text(
-                text = "متوجه شدم",
-                style = TextStyle(fontFamily = Vazirmatn, fontSize = 15.sp, fontWeight = FontWeight.Bold),
+                text = stringResource(R.string.whats_new_confirm),
+                style = newsStyle(15.sp, NewsColors.OnAccent, lineHeight = 22.sp)
+                    .copy(fontWeight = FontWeight.Bold),
             )
         }
     }
@@ -297,7 +303,7 @@ fun AnnouncementBody(announcement: Announcement) {
                     if (!block.large && index > 0) Spacer(Modifier.height(10.dp))
                     Text(
                         text = rich(block.text),
-                        style = rtlStyle(
+                        style = newsStyle(
                             size = if (block.large) 19.sp else 16.5.sp,
                             color = NewsColors.Accent,
                             lineHeight = if (block.large) 32.sp else 28.sp,
@@ -309,7 +315,7 @@ fun AnnouncementBody(announcement: Announcement) {
                 is AnnouncementBlock.Paragraph -> Text(
                     text = rich(block.text),
                     style = if (block.note) {
-                        rtlStyle(13.sp, NewsColors.Note, lineHeight = 23.sp)
+                        newsStyle(13.sp, NewsColors.Note, lineHeight = 23.sp)
                     } else {
                         bodyStyle()
                     },
@@ -339,8 +345,12 @@ fun AnnouncementBody(announcement: Announcement) {
                     block.items.forEachIndexed { i, item ->
                         ListRow(marker = {
                             Text(
-                                text = "${persianDigits(i + 1)}.",
-                                style = rtlStyle(14.5.sp, NewsColors.Accent, lineHeight = 26.sp),
+                                text = if (uiLanguage() == "fa") {
+                                    "${persianDigits(i + 1)}."
+                                } else {
+                                    "${i + 1}."
+                                },
+                                style = newsStyle(14.5.sp, NewsColors.Accent, lineHeight = 26.sp),
                                 modifier = Modifier.width(18.dp),
                             )
                         }, text = item)
@@ -385,19 +395,30 @@ private fun ListRow(marker: @Composable () -> Unit, text: String) {
 
 // ------------------------------------------------------------------ text
 
-private fun rtlStyle(size: TextUnit, color: Color, lineHeight: TextUnit) = TextStyle(
-    fontFamily = Vazirmatn,
-    fontSize = size,
-    lineHeight = lineHeight,
-    color = color,
-    // Paragraph direction is pinned rather than guessed from the first strong
-    // character, so a line that happens to open with a Latin word stays RTL.
-    textDirection = TextDirection.Rtl,
-    textAlign = TextAlign.Start,
-)
+/** The language the dialog is rendered in, e.g. "zh", "fa", "en". */
+@Composable
+private fun uiLanguage(): String = LocalConfiguration.current.primaryLanguage()
+
+@Composable
+private fun newsStyle(size: TextUnit, color: Color, lineHeight: TextUnit): TextStyle {
+    // Vazirmatn is the Persian face; Chinese needs the platform font, which is
+    // also the right fallback for the Latin names inside either text.
+    val persian = uiLanguage() == "fa"
+    return TextStyle(
+        fontFamily = if (persian) Vazirmatn else FontFamily.Default,
+        fontSize = size,
+        lineHeight = lineHeight,
+        color = color,
+        // Direction follows the layout instead of being pinned to RTL: the body
+        // is right to left in Persian and left to right in Chinese and English.
+        textDirection = TextDirection.Content,
+        textAlign = TextAlign.Start,
+    )
+}
 
 /** line-height: 1.8, as in the spec. */
-private fun bodyStyle() = rtlStyle(14.5.sp, NewsColors.TextSecondary, lineHeight = 26.sp)
+@Composable
+private fun bodyStyle() = newsStyle(14.5.sp, NewsColors.TextSecondary, lineHeight = 26.sp)
 
 private val StrongStyle = SpanStyle(color = NewsColors.Text, fontWeight = FontWeight.Bold)
 private val EmphasisStyle = SpanStyle(fontStyle = FontStyle.Italic, color = NewsColors.TextSecondary)

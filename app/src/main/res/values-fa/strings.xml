@@ -833,4 +833,11 @@
     <string name="announcements_desc">تازه‌های این نسخه و راهنمای اتصال، هر زمان که خواستید</string>
     <string name="announcements_version">نسخهٔ %1$s</string>
     <string name="announcements_footer">همهٔ پیام‌های به‌روزرسانی اینجا بایگانی می‌شوند. برای خواندن دوباره روی هر کدام بزنید.</string>
+
+    <!-- پنجرهٔ تازه‌ها (WhatsNewDialog) -->
+    <string name="whats_new_title">📢 تازه‌های نسخهٔ %1$s</string>
+    <string name="whats_new_subtitle">پیام‌ها و اطلاعیه‌های اتر</string>
+    <string name="whats_new_dont_show_again">دیگر این پیام را نمایش نده</string>
+    <string name="whats_new_confirm">متوجه شدم</string>
+    <string name="whats_new_close">بستن</string>
 </resources>

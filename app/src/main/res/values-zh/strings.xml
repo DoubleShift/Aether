@@ -819,4 +819,11 @@
     <string name="announcements_desc">随时查看本版本的新变化与连接指南</string>
     <string name="announcements_version">版本 %1$s</string>
     <string name="announcements_footer">每条更新消息都保存在这里。点按一条即可再次阅读。</string>
+
+    <!-- 更新公告弹窗 -->
+    <string name="whats_new_title">📢 新版本内容 %1$s</string>
+    <string name="whats_new_subtitle">Aether 的消息与公告</string>
+    <string name="whats_new_dont_show_again">不再显示这条消息</string>
+    <string name="whats_new_confirm">我知道了</string>
+    <string name="whats_new_close">关闭</string>
 </resources>
