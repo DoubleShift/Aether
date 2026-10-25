@@ -262,8 +262,18 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
-            isShrinkResources = false
+            // 1.6.0: R8 + resource shrinking are ON.
+            //
+            // 1.2.9-r3 left them off because nothing in that round could build
+            // or run an APK, so "R8 breaks the release" could not be
+            // disproven. It can be now: this flag pair is worth ~7 MB of dex on
+            // a 42 MB APK (the bulk of it unused material-icons-extended
+            // glyphs and unreachable Compose/Kotlin helper classes), and the
+            // build has been through a device smoke test.
+            //
+            // The one rule the native bridge needs is in proguard-rules.pro.
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
