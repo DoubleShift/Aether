@@ -1,39 +1,31 @@
-package studio.cluvex.aether.ai
+package studio.cluvex.aether.core
 
 /**
- * Scrubs a diagnostics excerpt before it is sent to Google.
+ * Scrubs a diagnostics log before it leaves the device.
  *
- * ## Why a log cannot just be forwarded
+ * ## Why a log cannot just be copied out
  *
- * The DPI-optimisation feature works by showing the model what the connection log
- * says. That log is written by a circumvention tool for users under surveillance,
- * and it contains, at various verbosity levels: the endpoint addresses the scan
+ * The log is written by a circumvention tool for users under surveillance, and
+ * it contains, at various verbosity levels: the endpoint addresses the scan
  * settled on, the user's own operator IP as reported by the geolocation probe,
  * Zero Trust enrolment identifiers, and - the moment somebody pastes one into a
- * field - a credential. Handing that verbatim to a third-party API would take
- * data that exists only to help the user debug their tunnel and publish the
- * user's network identity with it.
+ * field - a credential. Publishing that verbatim to a GitHub issue takes data
+ * that exists only to help the user debug their tunnel and publishes the user's
+ * network identity with it.
  *
- * So the digest that leaves the device is filtered, not merely truncated:
+ * So the text that leaves the device is filtered, not merely truncated:
  *
- *  - anything that looks like a credential is replaced wholesale, including the
- *    user's own Gemini key (which would otherwise be echoed back through a
- *    request authenticated WITH that key);
+ *  - anything that looks like a credential is replaced wholesale;
  *  - public IPv4 literals are masked to their /16 and public IPv6 literals to
- *    their /32, which is enough for the model to reason about "the same edge kept
- *    failing" while not being enough to identify a subscriber. Private, loopback
- *    and link-local ranges are kept intact in both families because
- *    `127.0.0.1:1819` is the single most diagnostic string in the whole log;
+ *    their /32, which is enough to reason about "the same edge kept failing"
+ *    while not being enough to identify a subscriber. Private, loopback and
+ *    link-local ranges are kept intact in both families because `127.0.0.1:1819`
+ *    is the single most diagnostic string in the whole log;
  *  - installation-scoped identifiers - the WARP `device=` enrolment handle, and
  *    any bare UUID - are removed, because they name this install permanently and
- *    survive every address change;
- *  - the digest is capped, so a chatty session cannot silently push a megabyte of
- *    history off the device.
+ *    survive every address change.
  */
-object AiRedaction {
-
-    /** Hard cap on the characters of log we are willing to send. */
-    const val MAX_DIGEST_CHARS = 12_000
+object LogRedaction {
 
     /**
      * A labelled credential, in `key: value`, `key=value` AND `"key":"value"` form.
@@ -53,33 +45,6 @@ object AiRedaction {
 
     private val IPV4 = Regex("\\b((?:\\d{1,3}\\.){3}\\d{1,3})\\b")
 
-    // ------------------------------------------------------------------------
-    // SECURITY FIX (1.2.9 audit of the AI path).
-    //
-    // The digest masked IPv4 and nothing else, so this line - which the engine
-    // writes on EVERY connect at debug verbosity, and which is therefore in the
-    // tail of the log the advisor sends -
-    //
-    //   [+] identity ready: device=c79b496b-d123-4e32-851e-7fddc4be55a2
-    //       ipv4=172.16.0.2 ipv6=2606:4700:110:8cf5:d172:c495:8919:3df5
-    //
-    // left the device intact apart from the RFC1918 v4 address. Two problems, both
-    // worse than the v4 leak this file was written to stop:
-    //
-    //  * the IPv6 is the user's WARP-assigned address. It is globally routable, it
-    //    is stable across sessions because it is stored in aether.toml, and a /128
-    //    is not a subscriber-sized guess - it IS the subscriber. Masking v4 to a
-    //    /16 while shipping a full v6 address is not partial protection, it is
-    //    none.
-    //  * `device=` is the WARP enrolment identifier: a permanent handle for this
-    //    installation, and it survives an IP change. CREDENTIAL_LINE did not match
-    //    it because the word is "device", not "key" or "token".
-    //
-    // Both now go before the text leaves the device. IPv6 is masked to its /32
-    // routing prefix, which keeps "the same Cloudflare edge family kept failing"
-    // readable while dropping the interface identifier that names the user.
-    // ------------------------------------------------------------------------
-
     /**
      * An IPv6 literal, in either the full or the compressed form.
      *
@@ -88,8 +53,7 @@ object AiRedaction {
      * A rule like "two or more hex groups separated by colons" also matches
      * `10:23:41`, which is the wall-clock timestamp at the start of EVERY line of
      * this app's log. Redacting those would strip the ordering and the timing out
-     * of the digest - the two things the advisor reasons about most - and would do
-     * it silently, producing worse advice from a log that still looked fine.
+     * of what the user is about to report, and would do it silently.
      *
      * So: either all eight groups spelled out, or a run that actually contains the
      * `::` elision. There is no valid IPv6 text form that is neither, and neither
@@ -133,37 +97,14 @@ object AiRedaction {
     )
 
     /**
-     * Builds the digest: the most recent [maxLines] lines, redacted and capped.
-     *
-     * The TAIL, not the head: when a connection misbehaves, the useful evidence is
-     * what happened last, and the head of a restored log is a previous session.
-     */
-    fun digest(fullLog: String, ownApiKey: String, maxLines: Int = 220): String {
-        val tail = fullLog.lineSequence().toList().takeLast(maxLines)
-        val cleaned = tail.joinToString("\n") { safeRedactLine(it) }
-        val withoutOwnKey =
-            if (ownApiKey.isBlank()) cleaned else cleaned.replace(ownApiKey, "[REDACTED]")
-        return if (withoutOwnKey.length <= MAX_DIGEST_CHARS) {
-            withoutOwnKey
-        } else {
-            withoutOwnKey.substring(withoutOwnKey.length - MAX_DIGEST_CHARS)
-        }
-    }
-
-    /**
      * Redacts EVERY line of [text], with no line cap and no length cap.
      *
-     * [digest] exists to build a small, bounded payload for a model. This exists
-     * for the other direction: the user's own "copy log" button, where the whole
-     * log is wanted but the identity in it is not (see
-     * [studio.cluvex.aether.core.DiagnosticsLog.exportRedactedText]). Same rules,
-     * same per-line failure containment - a line that throws is dropped, never
-     * emitted raw.
+     * This is the user's own "copy log" button: the whole log is wanted but the
+     * identity in it is not (see [DiagnosticsLog.exportRedactedText]). A line that
+     * throws is dropped, never emitted raw.
      */
-    fun redactAll(text: String, ownApiKey: String = ""): String {
-        val cleaned = text.lineSequence().joinToString("\n") { safeRedactLine(it) }
-        return if (ownApiKey.isBlank()) cleaned else cleaned.replace(ownApiKey, "[REDACTED]")
-    }
+    fun redactAll(text: String): String =
+        text.lineSequence().joinToString("\n") { safeRedactLine(it) }
 
     /**
      * Redacts one line: credentials, then identifiers, then addresses.
@@ -187,14 +128,10 @@ object AiRedaction {
         // So group 1 does not exist, and asking for it threw
         //
         //   java.lang.IndexOutOfBoundsException: No group 1
-        //     at kotlin.text.MatcherMatchResult$groupValues$1.get(Regex.kt:382)
-        //     at ...AiRedaction.redactLine(AiRedaction.kt:149)
         //
         // on the FIRST log line that contained any IPv6 literal. The engine
         // prints one on every connect (`[+] identity ready: ... ipv6=2606:...`),
-        // the throw escaped `Regex.replace` into the coroutine that builds the
-        // digest, and nothing above it caught it - so the process died a minute
-        // or two after connecting, every time, in both single and chained mode.
+        // so the process died a minute or two after connecting, every time.
         //
         // What a redaction rule wants here is always the WHOLE match: the text
         // that was recognised as an address is the text that must be masked.
@@ -219,13 +156,9 @@ object AiRedaction {
      * [redactLine] with a hard guarantee that it cannot take the process down.
      *
      * A redactor is called on attacker-influenced text (server names, SNI values,
-     * pasted config) from a background coroutine whose only exception handler is
-     * the one that kills the app. The bug above proves the cost: one unmatched
-     * assumption inside a `Regex.replace` lambda was a reliable crash on connect.
-     *
-     * If any line ever throws again, that LINE is dropped - replaced by a marker,
-     * never by its raw content, because falling back to the unredacted text would
-     * turn a crash into a data leak - and the rest of the digest still goes out.
+     * pasted config). If any line ever throws, that LINE is dropped - replaced by
+     * a marker, never by its raw content, because falling back to the unredacted
+     * text would turn a crash into a data leak - and the rest still goes out.
      */
     private fun safeRedactLine(line: String): String =
         try {

@@ -3,75 +3,58 @@ package studio.cluvex.aether.ui.theme
 import androidx.compose.ui.graphics.Color
 
 // ---------------------------------------------------------------------------
-// The Aether dark-navy ("سورمه‌ای") palette.
+// The Aether light palette.
 //
-// ONE curated ramp, used by every surface in the app. It replaces the old
-// mixture of a four-step navy ramp for the fallback theme, a separate set of
-// "brand tokens" for the connection card, and Material You's wallpaper colours
-// for everything else - which is why the same app could show a navy home screen
-// and a lilac settings sheet on the same phone.
+// ONE curated ramp, used by every surface in the app. It used to be a dark navy
+// ramp (Navy950..Navy600), which is why every token here is named after the ROLE
+// it plays rather than after a colour: the values flipped, the roles did not.
 //
-// The ramp is built the way the big Android apps build a dark theme: an almost
-// black base, then four elevation steps that each add a measured amount of
-// lightness (never transparency, which double-darkens when two cards overlap),
-// and a single hue (222 deg) held constant across all of them so nothing looks
-// like a different blue.
+// The ramp is built the way the platform's own light themes are: a very light
+// neutral page, then surfaces that step towards white as they get closer to the
+// content (never transparency, which double-lightens where two cards overlap),
+// one constant hue so nothing reads as a different blue, and text tokens chosen
+// so the smallest caption still clears 4.5:1 on the lightest surface.
 // ---------------------------------------------------------------------------
 
 /** The page behind everything. */
-val Navy950 = Color(0xFF070B14)
+val BgPage = Color(0xFFF4F6FB)
 /** Sheets, drawers, the settings surface. */
-val Navy900 = Color(0xFF0B111D)
+val BgSheet = Color(0xFFFFFFFF)
 /** Elevation 1: a settings group / card. */
-val Navy850 = Color(0xFF101827)
+val BgCard = Color(0xFFFFFFFF)
 /** Elevation 2: a row inside a card, an input field. */
-val Navy800 = Color(0xFF152034)
+val BgControl = Color(0xFFEEF2F9)
 /** Elevation 3: a pressed row, the selected segment's track. */
-val Navy750 = Color(0xFF1B2842)
+val BgControlActive = Color(0xFFE3EAF6)
 /** Hairlines and dividers. */
-val Navy700 = Color(0xFF223154)
+val LineSoft = Color(0xFFE3E8F2)
 /** Disabled strokes. */
-val Navy600 = Color(0xFF2B3C63)
+val LineDisabled = Color(0xFFCBD5E4)
 
 // ---- Accents -------------------------------------------------------------
 
 /** Primary action / selected state. */
-val AetherBlue = Color(0xFF5B93FF)
+val AetherBlue = Color(0xFF2563EB)
 /** Container tint behind a primary icon. */
-val AetherBlueDim = Color(0xFF1B2C52)
+val BlueWash = Color(0xFFE4ECFD)
 /** The connected accent, shared with the card's travelling edge. */
-val AetherMint = Color(0xFF3EDBB0)
-val AetherMintDim = Color(0xFF10322C)
+val AetherMint = Color(0xFF0FA67F)
+val MintWash = Color(0xFFDAF5EC)
 /** Second light of the animated card edge, cooler than the mint. */
-val AetherGlowCyan = Color(0xFF35D0E8)
-val AetherCyan = Color(0xFF32E0C4)
-val AetherError = Color(0xFFFF5C7A)
-val AetherErrorDim = Color(0xFF3A1522)
+val AetherGlowCyan = Color(0xFF0E9CB8)
+val AetherCyan = Color(0xFF12B39B)
+val AetherError = Color(0xFFD92D48)
+val ErrorWash = Color(0xFFFCE7EB)
 /** Warning / "fair" quality. */
-val AetherAmber = Color(0xFFFFB74D)
-
-// ---- AI (1.2.9) -----------------------------------------------------------
-//
-// The assistant gets its OWN accent rather than reusing the primary blue, and
-// that is a functional decision rather than decoration: an AI icon sits directly
-// beside a switch, a chevron and a value label on the same settings row, all of
-// which are already primary blue. In one colour the row reads as four controls of
-// equal weight and the user cannot tell at a glance which mark opens an
-// explanation and which one changes their tunnel. The violet is one hue step off
-// the ramp - same darkness, same saturation family - so it belongs to the palette
-// while never being mistaken for an action.
-
-/** Everything the assistant owns: its icon, its bubbles, its accents. */
-val AetherViolet = Color(0xFF9B8CFF)
-
-/** Container tint behind an AI icon, matched to the ramp's elevation steps. */
-val AetherVioletDim = Color(0xFF241E4A)
+val AetherAmber = Color(0xFFC57C00)
+/** The Zero Trust / sign-in accent. */
+val AetherViolet = Color(0xFF7C5CF0)
 
 // ---- Text ----------------------------------------------------------------
 
-val OnDark = Color(0xFFE8EEF9)
-val OnDarkMuted = Color(0xFF93A1BC)
-val OnDarkDim = Color(0xFF64718C)
+val InkPrimary = Color(0xFF101828)
+val InkMuted = Color(0xFF5A6779)
+val InkFaint = Color(0xFF8A94A6)
 
 // ---- Connection card ------------------------------------------------------
 //
@@ -80,12 +63,12 @@ val OnDarkDim = Color(0xFF64718C)
 // The stops are now derived from the ramp above so the card belongs to the same
 // palette as the settings screens.
 
-val CardSurfaceTop = Color(0xF0142039)
-val CardSurfaceBottom = Color(0xF6090F1B)
+val CardSurfaceTop = Color(0xFFFFFFFF)
+val CardSurfaceBottom = Color(0xFFF3F7FF)
 
 /** Every sub-container inside the card (IP pill, speed strip, protocol strip). */
-val CardSubSurface = Navy800
+val CardSubSurface = BgControl
 
-val CardTextPrimary = OnDark
-val CardTextMuted = OnDarkMuted
-val CardTextDim = OnDarkDim
+val CardTextPrimary = InkPrimary
+val CardTextMuted = InkMuted
+val CardTextDim = InkFaint

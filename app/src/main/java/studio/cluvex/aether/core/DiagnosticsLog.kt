@@ -11,7 +11,6 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
-import studio.cluvex.aether.ai.AiRedaction
 
 enum class LogLevel { DEBUG, INFO, WARN, ERROR }
 
@@ -448,15 +447,13 @@ object DiagnosticsLog {
      * 1.2.9-r3, §6).
      *
      * "Copy logs" hands over the raw log, which is right: it is a deliberate user
-     * action for a bug report, and a diagnosis needs the detail. But the redaction
-     * written to protect the user from the AI model protects them just as well from
-     * a public GitHub issue, and until now the safe option simply did not exist -
-     * so the only button copied the exit IP, the WARP handle and the endpoints into
-     * whatever thread the user pasted it in.
+     * action for a bug report, and a diagnosis needs the detail. But a masked
+     * export protects them from a public GitHub issue, and until now the safe
+     * option simply did not exist - so the only button copied the exit IP, the
+     * WARP handle and the endpoints into whatever thread the user pasted it in.
      *
-     * Same rule set as the AI digest ([AiRedaction]), minus its 220-line cap:
-     * plumbing and error text stay, identity goes.
+     * See [LogRedaction]: plumbing and error text stay, identity goes.
      */
     fun exportRedactedText(): String =
-        AiRedaction.redactAll(exportText())
+        LogRedaction.redactAll(exportText())
 }

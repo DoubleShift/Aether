@@ -61,7 +61,7 @@ import studio.cluvex.aether.model.ConnectionProfile
 import studio.cluvex.aether.model.TeamAuth
 import studio.cluvex.aether.ui.components.LtrOutlinedTextField
 import studio.cluvex.aether.ui.theme.AetherViolet
-import studio.cluvex.aether.ui.theme.Navy850
+import studio.cluvex.aether.ui.theme.BgCard
 
 /**
  * Settings -> Zero Trust: "sign in first, then connect" (1.4.0-r9, issue #12).
@@ -204,7 +204,7 @@ internal fun ZeroTrustMembershipGroup(profile: ConnectionProfile, editable: Bool
             dismissButton = {
                 TextButton(onClick = { confirmForget = false }) { Text(stringResource(R.string.zt_cancel)) }
             },
-            containerColor = Navy850,
+            containerColor = BgCard,
         )
     }
 }
@@ -619,7 +619,7 @@ internal fun ZeroTrustSignInDialog(
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.zt_cancel)) }
         },
-        containerColor = Navy850,
+        containerColor = BgCard,
     )
 }
 

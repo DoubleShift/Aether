@@ -34,9 +34,9 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import studio.cluvex.aether.ui.theme.Navy700
-import studio.cluvex.aether.ui.theme.Navy800
-import studio.cluvex.aether.ui.theme.OnDark
+import studio.cluvex.aether.ui.theme.LineSoft
+import studio.cluvex.aether.ui.theme.BgControl
+import studio.cluvex.aether.ui.theme.InkPrimary
 
 /**
  * A single-choice control whose options are SEPARATE cards (1.4.0-r4).
@@ -143,18 +143,18 @@ private fun OptionCard(
     val primary = MaterialTheme.colorScheme.primary
     val shape = RoundedCornerShape(CELL_RADIUS)
     val fill by animateColorAsState(
-        targetValue = if (isSelected) primary.copy(alpha = if (enabled) 0.14f else 0.07f) else Navy800,
+        targetValue = if (isSelected) primary.copy(alpha = if (enabled) 0.14f else 0.07f) else BgControl,
         animationSpec = tween(160),
         label = "optfill",
     )
     val outline by animateColorAsState(
-        targetValue = if (isSelected) primary.copy(alpha = if (enabled) 0.6f else 0.3f) else Navy700,
+        targetValue = if (isSelected) primary.copy(alpha = if (enabled) 0.6f else 0.3f) else LineSoft,
         animationSpec = tween(160),
         label = "optline",
     )
     val fg = when {
         isSelected -> primary.copy(alpha = if (enabled) 1f else 0.5f)
-        else -> OnDark.copy(alpha = if (enabled) 0.92f else 0.45f)
+        else -> InkPrimary.copy(alpha = if (enabled) 0.92f else 0.45f)
     }
     Row(
         modifier = modifier

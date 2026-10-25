@@ -29,6 +29,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import studio.cluvex.aether.ui.theme.BgControl
+import studio.cluvex.aether.ui.theme.InkFaint
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
@@ -185,19 +187,19 @@ fun DiagnosticsPanel(modifier: Modifier = Modifier, startExpanded: Boolean = fal
 private data class Overall(val color: Color, val captionRes: Int)
 
 private fun overallState(checks: List<ComponentCheck>): Overall = when {
-    checks.isEmpty() -> Overall(Color(0xFF8A93A6), R.string.diag_idle)
-    checks.any { it.state == CheckState.FAIL } -> Overall(Color(0xFFFF5C7A), R.string.diag_problem)
-    checks.all { it.state == CheckState.PASS } -> Overall(Color(0xFF32E0C4), R.string.diag_all_ok)
-    else -> Overall(Color(0xFFF5C451), R.string.diag_idle)
+    checks.isEmpty() -> Overall(Color(0xFF8A94A6), R.string.diag_idle)
+    checks.any { it.state == CheckState.FAIL } -> Overall(Color(0xFFD92D48), R.string.diag_problem)
+    checks.all { it.state == CheckState.PASS } -> Overall(Color(0xFF0FA67F), R.string.diag_all_ok)
+    else -> Overall(Color(0xFFC57C00), R.string.diag_idle)
 }
 
 @Composable
 private fun CheckRow(check: ComponentCheck) {
     val color = when (check.state) {
-        CheckState.PASS -> Color(0xFF32E0C4)
-        CheckState.FAIL -> Color(0xFFFF5C7A)
-        CheckState.RUNNING -> Color(0xFFF5C451)
-        CheckState.PENDING -> Color(0xFF8A93A6)
+        CheckState.PASS -> Color(0xFF0FA67F)
+        CheckState.FAIL -> Color(0xFFD92D48)
+        CheckState.RUNNING -> Color(0xFFC57C00)
+        CheckState.PENDING -> Color(0xFF8A94A6)
     }
     Row(
         modifier = Modifier
@@ -248,7 +250,7 @@ private fun LogConsole() {
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 120.dp, max = 260.dp)
-            .background(Color(0xFF0C0F16), RoundedCornerShape(12.dp))
+            .background(BgControl, RoundedCornerShape(12.dp))
             .padding(12.dp)
             .verticalScroll(scroll),
     ) {
@@ -256,7 +258,7 @@ private fun LogConsole() {
             Text(
                 text = androidx.compose.ui.res.stringResource(R.string.diag_empty_logs),
                 style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFF8A93A6),
+                color = InkFaint,
             )
         } else {
             Column {
@@ -274,10 +276,10 @@ private fun LogConsole() {
 }
 
 private fun logColor(level: LogLevel): Color = when (level) {
-    LogLevel.ERROR -> Color(0xFFFF7A90)
-    LogLevel.WARN -> Color(0xFFF5C451)
-    LogLevel.INFO -> Color(0xFFB8C2D6)
-    LogLevel.DEBUG -> Color(0xFF7C8698)
+    LogLevel.ERROR -> Color(0xFFB42342)
+    LogLevel.WARN -> Color(0xFF8A5A00)
+    LogLevel.INFO -> Color(0xFF39465A)
+    LogLevel.DEBUG -> Color(0xFF75818F)
 }
 
 @Composable

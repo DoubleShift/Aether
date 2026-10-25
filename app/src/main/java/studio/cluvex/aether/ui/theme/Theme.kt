@@ -1,7 +1,7 @@
 package studio.cluvex.aether.ui.theme
 
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
@@ -16,70 +16,67 @@ import androidx.core.view.WindowCompat
 import studio.cluvex.aether.data.LanguagePrefs
 
 /**
- * The one and only Aether colour scheme: deep navy, always dark.
+ * The one and only Aether colour scheme: a light, near-white UI.
  *
  * ## Why Material You / dynamic colour is gone
  *
- * Every build up to 1.2.7 called `dynamicDarkColorScheme(context)` on Android
- * 12+, so from Android 12 on the entire app was repainted from the user's
- * WALLPAPER. That is a lovely default for a launcher and the wrong one for this
- * app, and it is the direct cause of the look the settings screens had: the home
- * screen was navy (its connection card pins brand colours precisely to escape
- * this), while every settings surface, switch, segmented control and dropdown
- * came out in whatever hue the wallpaper happened to imply - lilac, olive,
- * terracotta. Half the app on brand, half of it not, differently on every phone,
- * and impossible to design against.
+ * Every build up to 1.2.7 called `dynamicColorScheme(context)` on Android 12+,
+ * so from Android 12 on the entire app was repainted from the user's WALLPAPER.
+ * That is a lovely default for a launcher and the wrong one for this app: half
+ * the app came out in whatever hue the wallpaper happened to imply - lilac,
+ * olive, terracotta - differently on every phone, and impossible to design
+ * against.
  *
- * The scheme is now fixed and hand-built from the [Navy950]..[Navy600] ramp, so
- * the app looks identical on every device and every Android version, exactly like
- * the big vendors' own system apps do. The surface roles are mapped to the
+ * The scheme is now fixed and hand-built from the [BgPage]..[LineDisabled] ramp,
+ * so the app looks identical on every device and every Android version, exactly
+ * like the big vendors' own system apps do. The surface roles are mapped to the
  * elevation ramp rather than to alpha, which is what stops a card inside a sheet
- * from double-darkening.
+ * from double-lightening.
  */
-private val AetherDarkColorScheme = darkColorScheme(
+private val AetherLightColorScheme = lightColorScheme(
     primary = AetherBlue,
-    onPrimary = Color(0xFF00122E),
-    primaryContainer = AetherBlueDim,
+    onPrimary = Color.White,
+    primaryContainer = BlueWash,
     onPrimaryContainer = AetherBlue,
 
     secondary = AetherMint,
-    onSecondary = Color(0xFF00251D),
-    secondaryContainer = AetherMintDim,
+    onSecondary = Color.White,
+    secondaryContainer = MintWash,
     onSecondaryContainer = AetherMint,
 
     tertiary = AetherGlowCyan,
-    onTertiary = Color(0xFF00232B),
+    onTertiary = Color.White,
 
-    background = Navy950,
-    onBackground = OnDark,
+    background = BgPage,
+    onBackground = InkPrimary,
 
     // Elevation 0/1: the page and the sheets drawn on it.
-    surface = Navy900,
-    onSurface = OnDark,
-    surfaceVariant = Navy850,
-    onSurfaceVariant = OnDarkMuted,
+    surface = BgSheet,
+    onSurface = InkPrimary,
+    surfaceVariant = BgCard,
+    onSurfaceVariant = InkMuted,
 
     // Material's own elevation tints, pinned to the ramp so a "tonal elevation"
     // never invents a colour of its own.
-    surfaceContainerLowest = Navy950,
-    surfaceContainerLow = Navy900,
-    surfaceContainer = Navy850,
-    surfaceContainerHigh = Navy800,
-    surfaceContainerHighest = Navy750,
-    surfaceBright = Navy750,
-    surfaceDim = Navy950,
-    inverseSurface = OnDark,
-    inverseOnSurface = Navy950,
+    surfaceContainerLowest = BgSheet,
+    surfaceContainerLow = BgSheet,
+    surfaceContainer = BgCard,
+    surfaceContainerHigh = BgControl,
+    surfaceContainerHighest = BgControlActive,
+    surfaceBright = BgSheet,
+    surfaceDim = BgPage,
+    inverseSurface = InkPrimary,
+    inverseOnSurface = BgSheet,
 
-    outline = Navy700,
-    outlineVariant = Navy700,
+    outline = LineSoft,
+    outlineVariant = LineSoft,
 
     error = AetherError,
     onError = Color.White,
-    errorContainer = AetherErrorDim,
+    errorContainer = ErrorWash,
     onErrorContainer = AetherError,
 
-    scrim = Color(0xCC03060C),
+    scrim = Color(0x66101928),
 )
 
 /**
@@ -129,11 +126,11 @@ fun AetherTheme(content: @Composable () -> Unit) {
             val window = activity.window
             WindowCompat.setDecorFitsSystemWindows(window, false)
             val controller = WindowCompat.getInsetsController(window, view)
-            // The scheme is permanently dark, so the system bars always need
-            // light icons. Set both, not only the status bar: on a device with a
+            // The scheme is permanently light, so the system bars need dark
+            // glyphs. Set both, not only the status bar: on a device with a
             // gesture nav pill the navigation bar was reading the wallpaper.
-            controller.isAppearanceLightStatusBars = false
-            controller.isAppearanceLightNavigationBars = false
+            controller.isAppearanceLightStatusBars = true
+            controller.isAppearanceLightNavigationBars = true
             // Keep the view world in step with the composition. Without this the
             // two disagree, and anything that is NOT a Compose node - dialog
             // windows, popup anchoring, selection handles - mirrors the wrong way.
@@ -145,7 +142,7 @@ fun AetherTheme(content: @Composable () -> Unit) {
         LocalLayoutDirection provides if (rtl) LayoutDirection.Rtl else LayoutDirection.Ltr,
     ) {
         MaterialTheme(
-            colorScheme = AetherDarkColorScheme,
+            colorScheme = AetherLightColorScheme,
             typography = aetherTypography(persian),
             content = content,
         )

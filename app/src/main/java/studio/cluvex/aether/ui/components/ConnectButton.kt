@@ -26,7 +26,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -107,7 +106,7 @@ fun ConnectButton(
             val radius = size.minDimension / 2f * (haloPulse?.value ?: 1f)
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(animatedAccent.copy(alpha = 0.42f), Color.Transparent),
+                    colors = listOf(animatedAccent.copy(alpha = 0.20f), Color.Transparent),
                     center = Offset(size.width / 2f, size.height / 2f),
                     radius = radius,
                 ),
@@ -124,8 +123,8 @@ fun ConnectButton(
                 .background(
                     Brush.linearGradient(
                         listOf(
-                            animatedAccent.copy(alpha = 0.28f),
-                            Color(0xFF0F1626),
+                            Color(0xFFFFFFFF),
+                            animatedAccent.copy(alpha = 0.18f),
                         ),
                     ),
                 )
@@ -157,21 +156,20 @@ fun ConnectButton(
                 }
             }
 
-            // Soft additive core behind the tick, so the glyph glows out of the
+            // Soft accent core behind the tick, so the glyph lifts out of the
             // disc instead of sitting flat on it.
             if (connected) {
                 Canvas(modifier = Modifier.size(CORE)) {
                     drawCircle(
                         brush = Brush.radialGradient(
                             colors = listOf(
-                                animatedAccent.copy(alpha = 0.30f),
+                                animatedAccent.copy(alpha = 0.22f),
                                 Color.Transparent,
                             ),
                             center = Offset(size.width / 2f, size.height / 2f),
                             radius = size.minDimension / 2f,
                         ),
                         radius = size.minDimension / 2f,
-                        blendMode = BlendMode.Plus,
                     )
                 }
             }

@@ -12,7 +12,7 @@
       three items above the cutout mode have to be repeated here. If you change
       one of them, change it in both files.
     -->
-    <style name="Theme.AetherMobile" parent="@android:style/Theme.Material.NoActionBar">
+    <style name="Theme.AetherMobile" parent="@android:style/Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">@color/aether_background</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>

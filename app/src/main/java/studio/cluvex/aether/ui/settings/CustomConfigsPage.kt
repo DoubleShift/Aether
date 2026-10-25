@@ -72,7 +72,7 @@ import studio.cluvex.aether.custom.CustomConfig
 import studio.cluvex.aether.custom.CustomConfigStore
 import studio.cluvex.aether.custom.NpvtPasswordException
 import studio.cluvex.aether.ui.components.LtrOutlinedTextField
-import studio.cluvex.aether.ui.theme.OnDarkDim
+import studio.cluvex.aether.ui.theme.InkFaint
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.sp
@@ -375,7 +375,7 @@ internal fun CustomConfigsPage(
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
                         stringResource(if (p.wrong) R.string.cc_password_wrong else R.string.cc_password_desc),
-                        color = if (p.wrong) MaterialTheme.colorScheme.error else OnDarkDim,
+                        color = if (p.wrong) MaterialTheme.colorScheme.error else InkFaint,
                     )
                     LtrOutlinedTextField(
                         value = password,
@@ -411,14 +411,14 @@ internal fun CustomConfigsPage(
                         Text(
                             stringResource(R.string.cc_locked_desc),
                             style = MaterialTheme.typography.bodySmall,
-                            color = OnDarkDim,
+                            color = InkFaint,
                         )
                     }
                     if (cfg.note.isNotBlank()) {
                         Text(
                             cfg.note,
                             style = MaterialTheme.typography.bodySmall,
-                            color = OnDarkDim,
+                            color = InkFaint,
                             modifier = Modifier.padding(top = 6.dp),
                         )
                     }
@@ -653,7 +653,7 @@ private fun PingBadge(report: ConfigPing.Report) {
                     stringResource(R.string.cc_ping_noreply) to Color(0xFFF59E0B)
                 ConfigPing.PingStatus.INVALID ->
                     stringResource(R.string.cc_ping_invalid) to MaterialTheme.colorScheme.error
-                else -> stringResource(R.string.cc_ping_nonet) to OnDarkDim
+                else -> stringResource(R.string.cc_ping_nonet) to InkFaint
             }
             Column(horizontalAlignment = Alignment.End, modifier = Modifier.padding(end = 2.dp)) {
                 Text(label, style = MaterialTheme.typography.labelMedium, color = tint, maxLines = 1)
@@ -663,7 +663,7 @@ private fun PingBadge(report: ConfigPing.Report) {
                     Text(
                         stringResource(R.string.cc_ping_ms, ConfigPing.FAILED_MS),
                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                        color = OnDarkDim,
+                        color = InkFaint,
                         maxLines = 1,
                     )
                 }
@@ -714,7 +714,7 @@ private fun ConfigRow(
                     Icon(
                         Icons.Rounded.Lock,
                         contentDescription = null,
-                        tint = OnDarkDim,
+                        tint = InkFaint,
                         modifier = Modifier.padding(end = 4.dp).heightIn(max = 16.dp),
                     )
                 }
@@ -729,7 +729,7 @@ private fun ConfigRow(
             Text(
                 detail,
                 style = MaterialTheme.typography.bodySmall,
-                color = OnDarkDim,
+                color = InkFaint,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )

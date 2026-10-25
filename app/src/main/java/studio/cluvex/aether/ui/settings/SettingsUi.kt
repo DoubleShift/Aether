@@ -64,17 +64,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import studio.cluvex.aether.ai.AiTopic
 import studio.cluvex.aether.R
-import studio.cluvex.aether.ui.ai.AiTopicIcon
-import studio.cluvex.aether.ui.theme.Navy700
-import studio.cluvex.aether.ui.theme.Navy750
-import studio.cluvex.aether.ui.theme.Navy800
-import studio.cluvex.aether.ui.theme.Navy850
-import studio.cluvex.aether.ui.theme.Navy950
-import studio.cluvex.aether.ui.theme.OnDark
-import studio.cluvex.aether.ui.theme.OnDarkDim
-import studio.cluvex.aether.ui.theme.OnDarkMuted
+import studio.cluvex.aether.ui.theme.LineSoft
+import studio.cluvex.aether.ui.theme.BgControlActive
+import studio.cluvex.aether.ui.theme.BgControl
+import studio.cluvex.aether.ui.theme.BgCard
+import studio.cluvex.aether.ui.theme.BgPage
+import studio.cluvex.aether.ui.theme.InkPrimary
+import studio.cluvex.aether.ui.theme.InkFaint
+import studio.cluvex.aether.ui.theme.InkMuted
 
 /**
  * The settings design system.
@@ -106,8 +104,8 @@ import studio.cluvex.aether.ui.theme.OnDarkMuted
  * that are actually visible; combined with the stability fix, a switch now
  * recomposes its own row and nothing else.
  *
- * The whole system is pinned to the navy ramp rather than to a wallpaper-derived
- * palette, so it looks the same on every device (see
+ * The whole system is pinned to the app's own light ramp rather than to a
+ * wallpaper-derived palette, so it looks the same on every device (see
  * [studio.cluvex.aether.ui.theme.AetherTheme]).
  */
 
@@ -145,7 +143,7 @@ fun SettingsScaffold(
 
     Scaffold(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        containerColor = Navy950,
+        containerColor = BgPage,
         topBar = {
             LargeTopAppBar(
                 title = {
@@ -167,10 +165,10 @@ fun SettingsScaffold(
                     }
                 },
                 colors = TopAppBarDefaults.largeTopAppBarColors(
-                    containerColor = Navy950,
+                    containerColor = BgPage,
                     scrolledContainerColor = AppBarScrolled,
-                    titleContentColor = OnDark,
-                    navigationIconContentColor = OnDark,
+                    titleContentColor = InkPrimary,
+                    navigationIconContentColor = InkPrimary,
                 ),
                 scrollBehavior = scrollBehavior,
             )
@@ -193,7 +191,7 @@ fun SettingsScaffold(
 }
 
 /** The app-bar colour once the large title has collapsed, and the sheet surface. */
-private val AppBarScrolled = Navy850
+private val AppBarScrolled = BgCard
 
 /**
  * One vertical slice of a page, emitted as a single lazy item.
@@ -219,39 +217,16 @@ fun LazyListScope.settingsSection(
 
 /**
  * The small coloured caption above a group.
- *
- * 1.2.9: it can carry the AI mark. Several groups are a single segmented selector
- * with no row in them - the endpoint mode, the protocol, the IP family - so the
- * caption is the only place an icon for that option can honestly sit.
  */
 @Composable
-fun GroupCaption(text: String, aiTopic: AiTopic? = null) {
-    if (aiTopic == null) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(start = 6.dp, top = 12.dp, bottom = 8.dp),
-        )
-        return
-    }
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 6.dp, end = 2.dp, top = 12.dp, bottom = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.weight(1f, fill = false),
-        )
-        Spacer(Modifier.width(10.dp))
-        AiTopicIcon(aiTopic)
-    }
+fun GroupCaption(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelLarge,
+        fontWeight = FontWeight.SemiBold,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(start = 6.dp, top = 12.dp, bottom = 8.dp),
+    )
 }
 
 /** The explanatory footnote under a group. */
@@ -260,7 +235,7 @@ fun GroupFooter(text: String) {
     Text(
         text = text,
         style = MaterialTheme.typography.bodySmall,
-        color = OnDarkDim,
+        color = InkFaint,
         modifier = Modifier.padding(start = 6.dp, end = 6.dp, top = 8.dp),
     )
 }
@@ -272,7 +247,7 @@ fun SettingsGroup(content: @Composable ColumnScope.() -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(GroupRadius))
-            .background(Navy850),
+            .background(BgCard),
         content = content,
     )
 }
@@ -283,7 +258,7 @@ fun RowDivider(inset: Boolean = true) {
     HorizontalDivider(
         modifier = Modifier.padding(start = if (inset) 60.dp else 0.dp),
         thickness = 0.5.dp,
-        color = Navy700,
+        color = LineSoft,
     )
 }
 
@@ -325,19 +300,6 @@ private fun BaseRow(
     onClick: (() -> Unit)?,
     titleColor: Color? = null,
     iconTint: Color? = null,
-    /**
-     * 1.2.9: which option this row is about, for the AI explanation icon.
-     *
-     * It lives HERE rather than in each row composable so that the icon's size,
-     * tint and position are defined exactly once, in the same place the row's
-     * heights and insets are. A per-row implementation is how the mark would end
-     * up 2dp higher on the switch rows than on the chevron rows.
-     *
-     * Null on a row means the row has nothing to explain, and
-     * [AiTopicIcon] draws nothing at all when the user has the hints switched off,
-     * so the row metrics with hints off are byte-identical to 1.2.8's.
-     */
-    aiTopic: AiTopic? = null,
     stateRole: Role? = null,
     stateValue: Boolean = false,
     trailing: @Composable () -> Unit = {},
@@ -400,14 +362,10 @@ private fun BaseRow(
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge,
-                color = (titleColor ?: OnDark).copy(alpha = alpha),
+                color = (titleColor ?: InkPrimary).copy(alpha = alpha),
             )
-            // 2: trailing slot - AI mark, then the row's own control
+            // 2: trailing slot - the row's own control
             Row(verticalAlignment = Alignment.CenterVertically) {
-                if (aiTopic != null) {
-                    AiTopicIcon(aiTopic)
-                    Spacer(Modifier.width(8.dp))
-                }
                 trailing()
             }
             // 3: summary
@@ -415,7 +373,7 @@ private fun BaseRow(
                 Text(
                     text = summaryText,
                     style = summaryStyle,
-                    color = OnDarkMuted.copy(alpha = alpha),
+                    color = InkMuted.copy(alpha = alpha),
                 )
             }
         },
@@ -493,14 +451,12 @@ fun SettingsNavRow(
     icon: ImageVector? = null,
     value: String? = null,
     enabled: Boolean = true,
-    aiTopic: AiTopic? = null,
 ) = BaseRow(
     title = title,
     summary = summary,
     icon = icon,
     enabled = enabled,
     onClick = onClick,
-    aiTopic = aiTopic,
 ) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         if (!value.isNullOrBlank()) {
@@ -518,7 +474,7 @@ fun SettingsNavRow(
             // AutoMirrored so the chevron points left in Persian.
             imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
                         contentDescription = null,
-            tint = OnDarkDim,
+            tint = InkFaint,
             modifier = Modifier.size(20.dp),
         )
     }
@@ -533,14 +489,12 @@ fun SettingsSwitchRow(
     summary: String? = null,
     icon: ImageVector? = null,
     enabled: Boolean = true,
-    aiTopic: AiTopic? = null,
 ) = BaseRow(
     title = title,
     summary = summary,
     icon = icon,
     enabled = enabled,
     onClick = { onCheckedChange(!checked) },
-    aiTopic = aiTopic,
     stateRole = Role.Switch,
     stateValue = checked,
 ) {
@@ -552,9 +506,9 @@ fun SettingsSwitchRow(
             checkedThumbColor = Color.White,
             checkedTrackColor = MaterialTheme.colorScheme.primary,
             checkedBorderColor = MaterialTheme.colorScheme.primary,
-            uncheckedThumbColor = OnDarkMuted,
-            uncheckedTrackColor = Navy800,
-            uncheckedBorderColor = Navy700,
+            uncheckedThumbColor = InkMuted,
+            uncheckedTrackColor = BgControl,
+            uncheckedBorderColor = LineSoft,
         ),
     )
 }
@@ -579,11 +533,10 @@ fun <T> SettingsChoiceRow(
     icon: ImageVector? = null,
     enabled: Boolean = true,
     sheetTitle: String = title,
-    aiTopic: AiTopic? = null,
     /**
-     * 1.4.0-r5: optional second line under an option in the sheet (e.g. what a
-     * Gemini model trades). Null / blank = single-line card, exactly as before,
-     * so every existing caller renders unchanged.
+     * 1.4.0-r5: optional second line under an option in the sheet. Null / blank
+     * = single-line card, exactly as before, so every existing caller renders
+     * unchanged.
      */
     optionDescription: (@Composable (T) -> String?)? = null,
 ) {
@@ -594,7 +547,6 @@ fun <T> SettingsChoiceRow(
         icon = icon,
         enabled = enabled,
         onClick = { open = true },
-        aiTopic = aiTopic,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
@@ -603,7 +555,7 @@ fun <T> SettingsChoiceRow(
                 color = if (enabled) {
                     MaterialTheme.colorScheme.primary
                 } else {
-                    OnDarkDim
+                    InkFaint
                 },
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -613,7 +565,7 @@ fun <T> SettingsChoiceRow(
             Icon(
                 imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
                 contentDescription = null,
-                tint = OnDarkDim,
+                tint = InkFaint,
                 modifier = Modifier.size(20.dp),
             )
         }
@@ -630,7 +582,7 @@ fun <T> SettingsChoiceRow(
                 text = sheetTitle,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
-                color = OnDark,
+                color = InkPrimary,
                 modifier = Modifier.padding(start = 22.dp, end = 22.dp, bottom = 12.dp),
             )
             // 1.3.1-r2: every option gets its own card, the way every other list in
@@ -662,7 +614,7 @@ fun <T> SettingsChoiceRow(
                                 if (isSelected) {
                                     MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
                                 } else {
-                                    Navy850
+                                    BgCard
                                 },
                             )
                             .border(
@@ -670,7 +622,7 @@ fun <T> SettingsChoiceRow(
                                 color = if (isSelected) {
                                     MaterialTheme.colorScheme.primary.copy(alpha = 0.55f)
                                 } else {
-                                    Navy700
+                                    LineSoft
                                 },
                                 shape = RoundedCornerShape(SheetItemRadius),
                             )
@@ -695,7 +647,7 @@ fun <T> SettingsChoiceRow(
                                 color = if (isSelected) {
                                     MaterialTheme.colorScheme.primary
                                 } else {
-                                    OnDark
+                                    InkPrimary
                                 },
                             )
                             if (!detail.isNullOrBlank()) {
@@ -703,7 +655,7 @@ fun <T> SettingsChoiceRow(
                                 Text(
                                     text = detail,
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = OnDarkMuted,
+                                    color = InkMuted,
                                 )
                             }
                         }
@@ -728,7 +680,6 @@ fun SettingsValueRow(
     title: String,
     value: String,
     icon: ImageVector? = null,
-    aiTopic: AiTopic? = null,
     trailing: @Composable () -> Unit = {},
 ) = BaseRow(
     title = title,
@@ -736,7 +687,6 @@ fun SettingsValueRow(
     icon = icon,
     enabled = true,
     onClick = null,
-    aiTopic = aiTopic,
 ) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
@@ -745,7 +695,7 @@ fun SettingsValueRow(
             // the BiDi algorithm in the Persian layout.
             style = MaterialTheme.typography.bodyMedium.copy(textDirection = TextDirection.Ltr),
             fontFamily = FontFamily.Monospace,
-            color = OnDark,
+            color = InkPrimary,
         )
         trailing()
     }
@@ -760,7 +710,6 @@ fun SettingsActionRow(
     icon: ImageVector? = null,
     enabled: Boolean = true,
     destructive: Boolean = false,
-    aiTopic: AiTopic? = null,
 ) = BaseRow(
     title = title,
     summary = summary,
@@ -769,7 +718,6 @@ fun SettingsActionRow(
     onClick = onClick,
     titleColor = if (destructive) MaterialTheme.colorScheme.error else null,
     iconTint = if (destructive) MaterialTheme.colorScheme.error else null,
-    aiTopic = aiTopic,
 )
 
 /**
@@ -782,38 +730,16 @@ fun SettingsActionRow(
 fun SettingsBlock(
     title: String? = null,
     helper: String? = null,
-    /**
-     * 1.2.9: a block hosts a full-width control instead of a row, so its AI icon
-     * sits on the block's own header line rather than in a row's trailing slot -
-     * and the header line is drawn for the icon alone when the block has no title,
-     * because several blocks are just a labelled text field.
-     */
-    aiTopic: AiTopic? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 14.dp)) {
-        if (title != null || aiTopic != null) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                // Exactly one weighted child, so a long label uses the whole
-                // line and an untitled block still pushes the mark to the end.
-                if (title != null) {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.labelLarge,
-                        color = OnDarkMuted,
-                        modifier = Modifier.weight(1f),
-                    )
-                } else {
-                    Spacer(Modifier.weight(1f))
-                }
-                Spacer(Modifier.width(10.dp))
-                AiTopicIcon(aiTopic)
-            }
+        if (title != null) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelLarge,
+                color = InkMuted,
+                modifier = Modifier.padding(bottom = 10.dp),
+            )
         }
         content()
         if (!helper.isNullOrBlank()) {
@@ -821,7 +747,7 @@ fun SettingsBlock(
             Text(
                 text = helper,
                 style = MaterialTheme.typography.bodySmall,
-                color = OnDarkDim,
+                color = InkFaint,
             )
         }
     }
@@ -842,14 +768,12 @@ fun SettingsRadioRow(
     summary: String? = null,
     icon: ImageVector? = null,
     enabled: Boolean = true,
-    aiTopic: AiTopic? = null,
 ) = BaseRow(
     title = title,
     summary = summary,
     icon = icon,
     enabled = enabled,
     onClick = onSelect,
-    aiTopic = aiTopic,
     stateRole = Role.RadioButton,
     stateValue = selected,
 ) {
@@ -859,7 +783,7 @@ fun SettingsRadioRow(
         enabled = enabled,
         colors = RadioButtonDefaults.colors(
             selectedColor = MaterialTheme.colorScheme.primary,
-            unselectedColor = OnDarkDim,
+            unselectedColor = InkFaint,
         ),
     )
 }
@@ -875,7 +799,7 @@ fun SettingsNoticeRow(text: String, icon: ImageVector? = null) = BaseRow(
 )
 
 /** The surface colour a nested control (input, segmented track) sits on. */
-val ControlSurface: Color = Navy800
+val ControlSurface: Color = BgControl
 
 /** The pressed / selected track colour of a nested control. */
-val ControlSurfaceSelected: Color = Navy750
+val ControlSurfaceSelected: Color = BgControlActive

@@ -24,7 +24,7 @@ import studio.cluvex.aether.R
 import studio.cluvex.aether.core.LoginCodePrompt
 import studio.cluvex.aether.ui.components.LtrOutlinedTextField
 import studio.cluvex.aether.ui.theme.AetherViolet
-import studio.cluvex.aether.ui.theme.Navy850
+import studio.cluvex.aether.ui.theme.BgCard
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 
@@ -141,6 +141,6 @@ fun LoginCodeDialog(modifier: Modifier = Modifier) {
                 Text(stringResource(R.string.zt_code_dismiss))
             }
         },
-        containerColor = Navy850,
+        containerColor = BgCard,
     )
 }

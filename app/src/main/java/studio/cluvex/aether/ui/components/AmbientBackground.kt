@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import studio.cluvex.aether.ui.theme.BgPage
 
 /**
  * The app backdrop: a single, flat, static colour.
@@ -32,4 +33,4 @@ fun AmbientBackground(
 }
 
 /** The flat app background colour. */
-private val BACKDROP = Color(0xFF070B14)
+private val BACKDROP = BgPage

@@ -79,22 +79,22 @@ import studio.cluvex.aether.ui.theme.Vazirmatn
 
 // ------------------------------------------------------------------ palette
 
-/** Dark navy dialog palette (1.5.0 announcement spec). */
+/** Light dialog palette (1.5.0 announcement spec). */
 private object NewsColors {
-    val Background = Color(0xFF0D1527)
-    val Border = Color(0xFF1E2B4A)
-    val Divider = Color(0xFF1A2640)
-    val Text = Color(0xFFFFFFFF)
-    val TextSecondary = Color(0xFFCBD5E1)
-    val Note = Color(0xFF94A3B8)
-    val Accent = Color(0xFF38BDF8)
-    val AccentAlt = Color(0xFF60A5FA)
-    val OnAccent = Color(0xFF0D1527)
-    val WarningBg = Color(0x26EAB308) // rgba(234, 179, 8, 0.15)
-    val WarningBar = Color(0xFFEAB308)
-    val ScrollTrack = Color(0x1A94A3B8)
-    val ScrollThumb = Color(0xFF38BDF8)
-    val CheckboxIdle = Color(0xFF64748B)
+    val Background = Color(0xFFFFFFFF)
+    val Border = Color(0xFFE3E8F2)
+    val Divider = Color(0xFFEDF1F8)
+    val Text = Color(0xFF101828)
+    val TextSecondary = Color(0xFF5A6779)
+    val Note = Color(0xFF8A94A6)
+    val Accent = Color(0xFF2563EB)
+    val AccentAlt = Color(0xFF1D4ED8)
+    val OnAccent = Color(0xFFFFFFFF)
+    val WarningBg = Color(0x1AEAB308) // rgba(234, 179, 8, 0.10)
+    val WarningBar = Color(0xFFD9A521)
+    val ScrollTrack = Color(0x1A8A94A6)
+    val ScrollThumb = Color(0xFF9CB4E0)
+    val CheckboxIdle = Color(0xFFB4BDCB)
 }
 
 private const val LRI = '\u2066' // LEFT-TO-RIGHT ISOLATE  ~ <bdi dir="ltr">

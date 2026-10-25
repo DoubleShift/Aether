@@ -6,7 +6,6 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
 import android.util.Log
-import studio.cluvex.aether.ai.AiSession
 import studio.cluvex.aether.core.DiagnosticsLog
 import studio.cluvex.aether.core.IdentityVault
 import studio.cluvex.aether.core.SignerIdentity
@@ -65,15 +64,6 @@ class AetherApp : Application() {
             // the first connect read them without touching the keystore again.
             runCatching { studio.cluvex.aether.custom.CustomConfigStore.load(this) }
         }
-
-        // 1.2.9 AI: bind the AI store to the process, once.
-        //
-        // Here rather than in an Activity because the AI settings outlive any
-        // screen: the chat survives a back gesture, and the on-connect log analysis
-        // has to know whether it is switched on even when the app was started by
-        // the Quick Settings tile and no Activity was ever created. Attaching is
-        // idempotent and touches no network - it only opens a DataStore.
-        AiSession.attach(this)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
