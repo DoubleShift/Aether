@@ -1,0 +1,822 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  简体中文翻译 · Aether Mobile 1.5.0
+  术语约定：VPN / WARP / MASQUE / WireGuard / Tor / Psiphon / Xray / VLESS 等
+  协议与产品名保留英文原文；只有说明性文字翻译为中文。
+-->
+<resources>
+    <string name="app_name">Aether</string>
+    <string name="tagline">一键即达的自由</string>
+
+    <string name="advanced">高级设置</string>
+
+    <string name="protocol">协议</string>
+    <string name="protocol_auto">智能</string>
+    <string name="protocol_masque">MASQUE</string>
+    <string name="protocol_wireguard">WireGuard</string>
+    <string name="protocol_gool">WARP×2</string>
+
+    <string name="scan_mode">扫描模式</string>
+    <string name="scan_turbo">极速</string>
+    <string name="scan_balanced">均衡</string>
+    <string name="scan_thorough">彻底</string>
+    <string name="scan_stealth">隐蔽</string>
+    <string name="scan_ironclad">铁壁</string>
+
+    <string name="ip_version">IP 版本</string>
+    <string name="ip_v4">IPv4</string>
+    <string name="ip_v6">IPv6</string>
+    <string name="ip_both">双栈</string>
+
+    <string name="quick_reconnect">快速重连</string>
+    <string name="quick_reconnect_desc">掉线后更快地恢复连接</string>
+    <string name="masque_http2">MASQUE over HTTP/2</string>
+    <string name="masque_http2_desc">用 HTTP/2 承载 MASQUE 传输</string>
+
+    <string name="state_idle">未连接</string>
+    <string name="state_launching">正在启动引擎…</string>
+    <string name="state_connecting">正在连接…</string>
+    <string name="state_connected">已连接</string>
+    <string name="state_reconnecting">正在重连…</string>
+    <string name="state_disconnecting">正在断开…</string>
+    <string name="state_error">连接失败</string>
+
+    <string name="tap_to_connect">轻点以安全连接</string>
+    <string name="tap_to_disconnect">轻点以断开连接</string>
+    <string name="secure_via">加密隧道：经由 %1$s</string>
+    <string name="reconnect_attempt">第 %1$d 次尝试，共 %2$d 次</string>
+
+    <string name="notif_channel">VPN 状态</string>
+    <string name="notif_channel_desc">显示 Aether 的连接状态</string>
+    <string name="notif_title">Aether</string>
+    <string name="notif_action_disconnect">断开连接</string>
+
+    <string name="err_engine_timeout">引擎未能在预期时间内打开本地代理。</string>
+    <string name="err_engine_died">引擎意外停止。</string>
+    <string name="err_proxy_ports">无法打开本地代理端口——可能已被其他应用占用。</string>
+
+    <!-- Connection meta: IP + flag + timer -->
+    <string name="ip_your_label">你的 IP</string>
+    <string name="ip_server_label">服务器 IP</string>
+    <string name="ip_checking">正在检测 IP…</string>
+    <string name="ip_unavailable">IP 不可用</string>
+    <string name="connected_for">已连接</string>
+
+    <!-- Diagnostics panel -->
+    <string name="diag_title">诊断与日志</string>
+    <string name="diag_subtitle">隧道各环节的实时状态</string>
+    <string name="diag_run">运行测试</string>
+    <string name="diag_copy">复制日志</string>
+    <string name="diag_clear">清空</string>
+    <string name="diag_copied">日志已复制到剪贴板</string>
+    <string name="diag_all_ok">全部检查通过——流量应当正常</string>
+    <string name="diag_problem">检测到问题——请查看失败的检查项</string>
+    <string name="diag_idle">运行测试以验证连通性</string>
+    <string name="diag_empty_logs">暂无日志。请先连接或运行测试。</string>
+    <string name="diag_copy_redacted">复制日志（已去除地址，可安全分享）</string>
+    <string name="diag_copied_redacted">已复制脱敏日志——IP 与身份标识已移除</string>
+    <string name="diag_log_sealed">本机保存的日志使用设备密钥加密。</string>
+
+    <!-- About panel -->
+    <string name="about_title">关于</string>
+    <string name="about_subtitle">致谢、链接与本次构建的改动</string>
+    <string name="about_version">版本 %1$s</string>
+    <string name="about_original_title">Aether 内核 — Cluvex Studio</string>
+    <string name="about_original_note">本应用所运行的上游引擎</string>
+    <string name="about_port_title">Android 应用与界面 — QW-AI-Code</string>
+    <string name="about_port_note">本版本：界面、Android 运行时与链路传输</string>
+    <string name="menu_open">打开菜单</string>
+    <string name="advanced_open">打开高级设置</string>
+
+    <!-- Quick Settings tile -->
+    <string name="qs_tile_label">Aether</string>
+
+    <!-- Share VPN panel -->
+    <string name="share_title">共享 VPN</string>
+    <string name="share_subtitle">把这台手机当作笔记本电脑或另一台手机的代理</string>
+    <string name="share_toggle">在当前网络共享</string>
+    <string name="share_toggle_desc">开启本地代理，同一 Wi-Fi 或热点下的设备即可使用</string>
+    <string name="share_http_label">HTTP 代理 — 填入系统代理设置</string>
+    <string name="share_socks_label">SOCKS5 代理 — 供支持 SOCKS 的应用使用</string>
+    <string name="share_copy">复制地址</string>
+    <string name="share_copied">地址已复制</string>
+    <string name="share_need_connect">请先连接 VPN——共享会让其他设备的流量经由本机隧道发出。</string>
+    <string name="share_starting">正在启动共享…若几秒后仍未就绪，请关闭开关再重新打开。</string>
+    <string name="share_need_wifi">请连接 Wi-Fi 或开启热点后再共享。</string>
+    <string name="share_howto">在其他设备（同一网络）上打开代理设置，填入下列地址之一：</string>
+    <string name="share_warning">只有本局域网内输入下方用户名和密码的设备才能使用该代理。它们的流量仍从你的出口 IP 发出，因此只与你信任的设备共享。</string>
+    <string name="share_auth_note">其他设备需用下列信息登录代理：</string>
+    <string name="share_user_label">代理用户名</string>
+    <string name="share_pass_label">代理密码</string>
+    <string name="share_pass_rotate">生成新密码</string>
+    <string name="share_pass_rotated">已生成新的代理密码</string>
+
+    <string name="traffic_download">下载</string>
+    <string name="traffic_upload">上传</string>
+    <string name="traffic_total">总计 %1$s</string>
+
+    <!-- Obfuscation (Amnezia) -->
+    <string name="noize_title">混淆（Amnezia）</string>
+    <string name="noize_desc">注入垃圾数据与伪造握手，让 DPI 无法对隧道做指纹识别</string>
+    <string name="noize_off">关闭</string>
+    <string name="noize_light">轻度</string>
+    <string name="noize_firewall">防火墙</string>
+    <string name="noize_balanced">均衡</string>
+    <string name="noize_gfw">GFW</string>
+    <string name="noize_aggressive">激进</string>
+
+    <!-- Endpoint selection / manual range -->
+    <string name="endpoint_mode">端点</string>
+    <string name="endpoint_auto">自动扫描</string>
+    <string name="endpoint_peer">手动 IP</string>
+    <string name="endpoint_range">自定义范围</string>
+    <string name="manual_peer_label">端点（ip:port）</string>
+    <string name="manual_peer_hint">例如 162.159.192.1:443</string>
+    <string name="manual_range_label">待扫描的 IP 段</string>
+    <string name="manual_range_hint">例如 8.6.112.0/24, 188.114.96.0/24</string>
+    <string name="manual_range_help">引擎只扫描你填写的范围。支持 8.6.112.x、8.6.112.0/24 或单个 IP，多个范围用英文逗号分隔。</string>
+
+    <!-- Transport tuning -->
+    <string name="keepalive_label">Keepalive（秒）</string>
+    <string name="keepalive_default">默认</string>
+    <string name="fragment_title">TLS 分片</string>
+    <string name="fragment_desc">拆分 TLS 握手，从 DPI 旁滑过</string>
+    <string name="ech_title">加密客户端问候（ECH）</string>
+    <string name="ech_desc">对 DPI 隐藏目标域名（SNI）</string>
+    <string name="mtu_label">MTU</string>
+    <string name="mtu_desc">在移动数据下，较小值（1280）更稳妥</string>
+
+    <!-- Proxy mode + split tunneling -->
+    <string name="proxy_mode_title">代理模式（不使用系统 VPN）</string>
+    <string name="proxy_mode_desc">只运行本地 SOCKS5/HTTP 代理，不接管整台设备</string>
+    <string name="proxy_endpoints_hint">固定地址 — 在其他应用的代理设置中填入其中之一：</string>
+    <string name="proxy_socks_label">SOCKS5 代理</string>
+    <string name="proxy_http_label">HTTP 代理</string>
+    <string name="split_mode">分流</string>
+    <string name="split_off">关闭</string>
+    <string name="split_include">仅所选应用</string>
+    <string name="split_exclude">除所选之外</string>
+    <string name="split_select_apps">选择应用（%1$d）</string>
+    <string name="apps_dialog_title">选择应用</string>
+    <string name="apps_search_hint">搜索应用</string>
+    <string name="apps_done">完成</string>
+    <string name="apps_loading">正在加载应用…</string>
+    <string name="section_transport">传输与反 DPI</string>
+    <string name="section_routing">路由</string>
+    <!-- Readiness gating + settings reset -->
+    <string name="state_verifying">正在验证连接…</string>
+    <string name="state_analyzing">正在分析你的网络（智能模式）…</string>
+    <string name="err_auto_failed">智能模式尝试了所有策略，但在这个网络下都连不上。请手动选择一个协议。</string>
+    <string name="err_protocol_failed">这个协议在此网络下即使启用混淆也无法连接。请改用智能模式或其他协议。</string>
+    <string name="err_selftest">隧道已启动，但端到端自检失败。请重试。</string>
+    <string name="section_reset">重置</string>
+    <string name="reset_settings">将全部设置恢复为默认值</string>
+    <string name="reset_done">设置已恢复默认值</string>
+
+    <!-- About: engine/core version -->
+    <string name="about_core_version">引擎（内核）版本 %1$s</string>
+    <string name="about_patch_level">构建：%1$s</string>
+    <string name="about_signer">签名证书：%1$s</string>
+    <string name="about_signer_ok">与 Aether 官方证书一致。</string>
+    <string name="about_signer_bad">这份副本由其他人签名，而不是 Aether 项目。VPN 应用会看到你的全部流量——请从官方发布页面重新安装。</string>
+    <string name="about_signer_unpinned">本构建未内置官方指纹，因此无法在这里校验。</string>
+    <string name="about_signer_unknown">系统没有报告此应用的签名证书。</string>
+    <string name="about_apk_hash">APK SHA-256：%1$s</string>
+    <string name="about_apk_hash_loading">正在计算…</string>
+    <string name="about_verify_hint">在信任某个更新之前，请把此哈希与官方发布页面上为你的下载公布的哈希做比对。</string>
+
+    <!-- Zero Trust -->
+    <string name="section_zerotrust">Zero Trust（组织）</string>
+    <string name="team_auth_label">加入方式</string>
+    <string name="team_auth_off">关闭</string>
+    <string name="team_auth_service">服务令牌</string>
+    <string name="team_auth_email">邮箱验证码</string>
+    <string name="team_auth_token">注册令牌</string>
+    <string name="team_auth_desc">加入 Cloudflare Zero Trust 组织，而不是使用个人版 WARP。日常使用请保持关闭。</string>
+    <string name="team_label">团队名称</string>
+    <string name="team_hint">acme</string>
+    <string name="team_help">只填名称——acme 表示 acme.cloudflareaccess.com。</string>
+    <string name="access_id_label">客户端 ID</string>
+    <string name="access_secret_label">客户端密钥</string>
+    <string name="access_email_label">工作邮箱</string>
+    <string name="access_token_label">注册令牌</string>
+    <string name="access_secret_help">使用硬件级密钥加密保存，并带外传给引擎，绝不会出现在命令行上。</string>
+    <string name="gateway_title">使用组织 Gateway</string>
+    <string name="gateway_desc">通过组织的过滤代理发送 HTTP/HTTPS。会多一跳，并允许组织记录你的浏览记录——非必要请保持关闭。</string>
+
+    <string name="section_routes">路由规则</string>
+    <string name="route_block_label">永不连接（阻断）</string>
+    <string name="route_block_hint">ads.example.com, port:25</string>
+    <string name="route_direct_label">绕过隧道（直连）</string>
+    <string name="bypass_iran_title">绕过伊朗站点</string>
+    <string name="bypass_iran_desc">伊朗站点（.ir 域名与伊朗 IP 段）在隧道之外直连。共享期间暂停。</string>
+    <string name="block_ads_title">拦截广告与追踪器</string>
+    <string name="block_ads_desc">拦截广告与追踪域名（HaGeZi Light 列表，每周经隧道更新）。</string>
+    <string name="route_direct_hint">private, bank.example.com</string>
+    <string name="routes_help">以英文逗号分隔。支持 example.com、full:、keyword:、regexp:、10.0.0.0/8、port:25 和 private。先检查阻断，再检查直连。</string>
+
+    <string name="dns_label">隧道内 DNS</string>
+    <string name="dns_hint">1.1.1.1, 1.0.0.1</string>
+    <string name="dns_help">留空则使用引擎默认值（1.1.1.1、1.0.0.1）。无效条目会被忽略。</string>
+
+    <!-- Feature merge: widget, onboarding, ping, crash report -->
+    <string name="widget_desc">一键连接或断开 Aether</string>
+    <string name="widget_toggle_desc">切换连接状态</string>
+    <string name="ping_label">延迟</string>
+    <string name="ping_measuring">正在测量…</string>
+    <string name="ping_unavailable">不可用</string>
+    <string name="ping_hint">轻点重新测量</string>
+    <string name="onboarding_skip">跳过</string>
+    <string name="onboarding_next">下一步</string>
+    <string name="onboarding_start">开始使用</string>
+    <string name="onboarding_title_1">欢迎使用 Aether</string>
+    <string name="onboarding_body_1">一条快速、安全、能突破审查的隧道。一键即可通过 MASQUE、WireGuard 或 WARP×2 连接。</string>
+    <string name="onboarding_title_2">智能协议选择</string>
+    <string name="onboarding_body_2">智能模式会分析你的网络，挑出真正可用的协议，必要时自动加上反 DPI 混淆。</string>
+    <string name="onboarding_title_3">隐私从设计开始</string>
+    <string name="onboarding_body_3">没有账号、没有日志、没有追踪器。首次连接时 Android 会请求 VPN 权限，那是系统在把控制权留在你手上。</string>
+    <string name="crash_title">Aether 意外停止</string>
+    <string name="crash_subtitle">下面的内容由崩溃处理器保存，你可以把它们复制到错误报告里。</string>
+    <string name="crash_copy">复制详情</string>
+    <string name="crash_copied">已复制</string>
+    <string name="crash_dismiss">忽略</string>
+
+    <string name="section_security">安全与稳定性</string>
+    <string name="kill_switch_title">断网保护（Kill Switch）</string>
+    <string name="kill_switch_desc">隧道意外断开时阻断全部流量，不让任何数据泄漏到 VPN 之外</string>
+    <string name="strict_kill_switch_title">严格断网保护</string>
+    <string name="strict_kill_switch_desc">手动断开后继续阻断，直到你自行解除</string>
+    <string name="state_killswitch">断网保护已生效 - 流量被阻断</string>
+    <string name="ipv6_leak_title">IPv6 泄漏防护</string>
+    <string name="ipv6_leak_desc">让 IPv6 流量同样走隧道</string>
+    <string name="smart_reconnect_title">智能重连</string>
+    <string name="smart_reconnect_desc">重启失败达到次数上限后停止重试并报错</string>
+    <string name="reconnect_limit_label">最大重连次数</string>
+    <string name="section_engine_tuning">引擎调节</string>
+    <string name="fragment_size_label">分片大小范围</string>
+    <string name="fragment_size_hint">16-32</string>
+    <string name="fragment_delay_label">分片延迟范围（毫秒）</string>
+    <string name="fragment_delay_hint">2-10</string>
+    <string name="no_data_check_title">跳过数据检查</string>
+    <string name="no_data_check_desc">连接后跳过引擎的端到端数据探测</string>
+    <string name="tls_groups_label">TLS 组</string>
+    <string name="tls_groups_hint">X25519:P-256</string>
+    <string name="validate_secs_label">校验秒数（0 = 默认）</string>
+    <string name="reconnect_secs_label">重连秒数（0 = 默认）</string>
+    <string name="secs_hint">0</string>
+    <string name="no_profile_retry_title">不重试备用配置</string>
+    <string name="no_profile_retry_desc">不回退到备用的 WireGuard 配置</string>
+    <string name="core_log_level_label">内核日志级别</string>
+    <string name="blocked_select_apps">被阻断的应用（%1$d）</string>
+    <string name="blocked_apps_desc">VPN 开启时，被阻断的应用完全无法联网。会启用内置的过滤桥。</string>
+
+    <string name="meta_protocol">协议</string>
+    <string name="meta_latency">延迟</string>
+
+    <string name="route_sniff_title">在隧道后端匹配域名规则</string>
+    <string name="route_sniff_desc">从 TLS/HTTP 握手中读出站点名称，因此上面的域名规则在 Android 上同样有效——否则引擎只能看到一个 IP 地址。</string>
+    <string name="route_sniff_ms_label">等待域名的时间窗口（毫秒）</string>
+    <string name="route_sniff_ms_hint">400</string>
+    <string name="section_upstream">上游代理（链式）</string>
+    <string name="upstream_label">上游代理</string>
+    <string name="upstream_hint">socks5://127.0.0.1:1080</string>
+    <string name="upstream_help">通过本机已运行的代理向外拨号。socks5://host:port 可承载全部协议；http://host:port 只承载 MASQUE over HTTP/2，并会自动替你开启。凭据可写成 user:pass@host:port，会私下传给引擎，绝不会出现在它的命令行上。留空表示直接连接。</string>
+    <string name="reprovision_title">更换被拒绝的设备身份</string>
+    <string name="reprovision_desc">如果 Cloudflare 不再接受已保存的设备身份，就自动注册一个新身份，而不是维持一条「连得上却传不动流量」的隧道。</string>
+
+    <string name="meta_ping_strength">信号强度</string>
+    <string name="ping_quality_excellent">极佳</string>
+    <string name="ping_quality_good">良好</string>
+    <string name="ping_quality_fair">一般</string>
+    <string name="ping_quality_poor">较差</string>
+    <string name="ping_quality_measuring">测量中</string>
+    <string name="ping_quality_offline">未连接</string>
+
+    <string name="quick_settings_title">隧道设置</string>
+    <string name="quick_settings_subtitle">连接、传输、DNS 与上游代理</string>
+    <string name="settings_title">设置</string>
+    <string name="settings_subtitle">连接、应用、安全与诊断</string>
+    <string name="settings_locked_hint">请先断开连接再修改隧道设置。这些设置会在引擎启动时交给它。</string>
+    <string name="action_cancel">取消</string>
+
+    <string name="cat_group_tunnel">隧道</string>
+    <string name="cat_group_device">本机</string>
+    <string name="cat_group_app">应用</string>
+    <string name="cat_group_tuning">调节</string>
+    <string name="cat_group_antidpi">反 DPI</string>
+    <string name="cat_group_recovery">恢复</string>
+    <string name="section_core">内核</string>
+
+    <string name="cat_connection">连接</string>
+    <string name="cat_connection_desc">网络后端、出口国家、协议与扫描</string>
+    <string name="cat_transport_desc">混淆、端点、MTU 与反 DPI</string>
+    <string name="cat_dns_routing">DNS 与路由规则</string>
+    <string name="cat_dns_routing_desc">隧道内解析器、阻断列表与直连列表</string>
+    <string name="cat_upstream_desc">通过本机已运行的代理向外拨号</string>
+    <string name="cat_apps">应用与代理</string>
+    <string name="cat_apps_desc">代理模式、分流与被阻断的应用</string>
+    <string name="cat_security_desc">断网保护、IPv6 泄漏防护与重连</string>
+    <string name="cat_engine_desc">分片、TLS 组与内核日志级别</string>
+    <string name="cat_zerotrust_desc">加入 Cloudflare Zero Trust 组织</string>
+    <string name="cat_appearance_desc">选择 English、简体中文，或跟随系统</string>
+
+    <string name="backend_label">网络后端</string>
+    <string name="backend_help_aether">只经内置 Aether/WARP 引擎一跳。速度最快。</string>
+    <string name="backend_help_chained">两跳：先由 Aether 连接，再由 Psiphon 从中穿出。出口 IP 会变成 Psiphon 的，因此封锁 Aether/WARP 地址的站点又能打开了。</string>
+    <string name="exit_country_label">出口国家</string>
+    <string name="exit_help_aether">Aether/WARP 自行选择 anycast 出口。</string>
+    <string name="exit_help_psiphon">Psiphon 会把它当作强制的地区筛选。若在该地区建不起来，应用会自动改用自动出口重试。</string>
+
+    <string name="fast_endpoint_title">只复用快速端点</string>
+    <string name="fast_endpoint_desc">快速重连会跳过扫描，直接使用上次可用的端点。开启此项后还会校验它的速度：慢的端点会被重新扫描替换，而不是让整场会话的上下行都打对折。</string>
+
+    <string name="language_title">语言</string>
+    <string name="language_desc">作用于整个应用，包括通知、快捷设置磁贴与桌面小部件。波斯语会把排版切换为从右到左。</string>
+    <string name="language_system">跟随系统</string>
+    <string name="language_english">English</string>
+    <string name="language_chinese">简体中文</string>
+    <string name="language_persian">فارسی</string>
+
+    <string name="reset_confirm_title">重置所有设置？</string>
+    <string name="reset_confirm_body">每一项设置都会回到默认值，包括端点范围、路由规则与加入信息。</string>
+    <string name="reset_confirm_ok">重置</string>
+    <!-- Gemini AI features -->
+    <string name="ai_title">Aether AI</string>
+    <string name="ai_subtitle">应用内的 Gemini：解释、调优与对话</string>
+    <string name="ai_badge">AI</string>
+    <string name="cat_ai">助手</string>
+    <string name="cat_ai_desc">解释任意设置、读取日志、给出调优建议</string>
+
+    <!-- key -->
+    <string name="ai_section_key">Gemini API 密钥</string>
+    <string name="ai_key_label">API 密钥</string>
+    <string name="ai_key_hint">AIza…</string>
+    <string name="ai_key_help">在 Google AI Studio（aistudio.google.com/apikey）领取免费密钥。它用硬件级密钥封存在本机，只会发往 Google，而且始终经隧道发出。重置应用设置不会删除它。</string>
+    <string name="ai_key_show">显示</string>
+    <string name="ai_key_hide">隐藏</string>
+    <string name="ai_key_paste">粘贴</string>
+    <string name="ai_key_forget">忘记密钥与模型列表</string>
+    <string name="ai_key_forgotten">已移除 API 密钥</string>
+    <string name="ai_test">测试 API 连接</string>
+    <string name="ai_test_hint">校验密钥并列出它可用的模型</string>
+    <string name="ai_test_running">正在测试…</string>
+    <string name="ai_test_ok">可用 — 经 %2$s 可访问 %1$d 个模型</string>
+    <string name="ai_test_failed">不可用：%1$s</string>
+    <string name="a11y_connect">连接</string>
+    <string name="a11y_disconnect">断开连接</string>
+    <string name="a11y_cancel_connecting">取消连接</string>
+    <string name="a11y_back">返回</string>
+    <string name="a11y_show_password">显示密码</string>
+    <string name="a11y_hide_password">隐藏密码</string>
+    <string name="a11y_show_value">显示内容</string>
+    <string name="a11y_hide_value">隐藏内容</string>
+    <string name="a11y_copy_value">复制%1$s</string>
+    <string name="a11y_select_message">选择消息</string>
+
+    <!-- models -->
+    <string name="ai_section_models">你的密钥可用的模型</string>
+    <string name="ai_model_label">模型</string>
+    <string name="ai_models_count">%1$d 个可用</string>
+    <string name="ai_models_empty">尚未发现模型。请先连接，再运行 API 测试：列表读取自你自己的密钥，所以显示的就是该密钥获准使用的模型。</string>
+    <string name="ai_models_refresh">刷新模型列表</string>
+
+    <!-- behaviour -->
+    <string name="ai_section_behaviour">行为</string>
+    <string name="ai_auto_optimize">每次连接后分析日志</string>
+    <string name="ai_auto_optimize_desc">默认关闭。开启后，Gemini 会在每次成功连接后读取本次会话日志的脱敏片段并给出贴合的设置建议；当你问及日志时，AI 对话也能自动读取当前日志。发送前会掩去地址与身份标识。</string>
+    <string name="ai_auto_apply">自动应用建议</string>
+    <string name="ai_auto_apply_desc">直接把建议写入设置，不必等你确认。默认关闭——自己会变的设置很难和 bug 区分开。</string>
+    <string name="ai_hints">在选项旁显示 AI 图标</string>
+    <string name="ai_hints_desc">点击任意设置旁的图标，Gemini 会说明它是什么、有什么用、该怎么用。</string>
+
+    <!-- chat -->
+    <string name="ai_chat_open">与 Gemini 对话</string>
+    <string name="ai_chat_subtitle">随便问，或直接说你想改什么</string>
+    <string name="ai_chat_model">模型：%1$s</string>
+    <string name="ai_chat_empty_title">你好，我是 Aether AI</string>
+    <string name="ai_chat_empty_body">我可以解释这个应用里的任何设置、读取本次会话的日志并给出调优建议，也可以单纯回答一个问题。</string>
+    <string name="ai_chat_suggest_1">我的连接现在为什么这么慢？</string>
+    <string name="ai_chat_suggest_2">移动数据下该用哪个协议？</string>
+    <string name="ai_chat_suggest_3">解释一下 MTU，并帮我选个最合适的值</string>
+    <string name="ai_chat_suggest_4">让隧道更难被检测</string>
+    <string name="ai_chat_input_hint">问 Aether AI…</string>
+    <string name="ai_chat_send">发送</string>
+    <string name="ai_chat_stop">停止</string>
+    <string name="ai_chat_clear">清空对话</string>
+    <string name="ai_chat_thinking">思考中…</string>
+    <string name="ai_chat_copy">复制回答</string>
+
+    <!-- explain sheet -->
+    <string name="ai_explain_title">这是什么？</string>
+    <string name="ai_explain_loading">正在询问 Gemini…</string>
+    <string name="ai_explain_failed">%1$s</string>
+    <string name="ai_explain_retry">重试</string>
+
+    <!-- advisor -->
+    <string name="ai_advisor_title">设置顾问</string>
+    <string name="ai_advisor_subtitle">你的网络正在做什么，以及适合它的设置</string>
+    <string name="ai_advisor_run">分析本次会话</string>
+    <string name="ai_advisor_running">正在读取日志并思考…</string>
+    <string name="ai_advisor_idle">Gemini 会读取本次会话日志的脱敏片段——凭据已移除、公网地址已掩去——并给出调优建议。在你按下「应用」之前什么都不会改变。</string>
+    <string name="ai_advisor_failed">无法分析：%1$s</string>
+    <string name="ai_advisor_dpi">你的网络看上去在做什么</string>
+    <string name="ai_advisor_confidence">置信度：%1$s</string>
+    <string name="ai_advisor_no_changes">没有值得改动的地方——本次会话状态良好。</string>
+    <string name="ai_confidence_high">高</string>
+    <string name="ai_confidence_medium">中</string>
+    <string name="ai_confidence_low">低</string>
+
+    <!-- proposals -->
+    <string name="ai_changes_title">建议的设置（%1$d）</string>
+    <string name="ai_apply">应用</string>
+    <string name="ai_applied">已应用</string>
+    <string name="ai_apply_note">隧道设置会在引擎启动时交给它，因此这些改动在下次连接时生效。</string>
+    <string name="ai_dismiss">忽略</string>
+
+    <!-- gate -->
+    <string name="ai_gate_no_key">添加 Gemini API 密钥后才能使用 AI 功能。</string>
+    <string name="ai_gate_no_model">还没有选择模型。运行一次 API 测试，应用会替你挑一个。</string>
+    <string name="ai_gate_disconnected">AI 需要隧道。请先连接：Google 的 AI 端点无法直连，而 Aether 自身的流量有意绕开它自己建立的隧道。</string>
+    <string name="ai_gate_wrong_mode">请把网络后端切换为 Aether → Psiphon。Google 的 AI 端点拒绝纯 Aether/WARP 出口地址，这正是 AI 只在链式模式下可用的原因。</string>
+    <string name="ai_gate_fix_key">打开 AI 设置</string>
+    <string name="ai_gate_fix_mode">打开连接设置</string>
+
+    <!-- errors -->
+    <string name="ai_error_bad_key">你的 API 密钥被拒绝了。Google 在 2026 年停用了旧的“标准”Gemini 密钥——如果这个密钥以前能用，请在 Google AI Studio 新建一个并粘贴过来。</string>
+    <string name="ai_error_rate_limit">已触发限速或配额上限。请稍等片刻再重试。</string>
+    <string name="ai_error_no_model">你的密钥无法使用该模型。请刷新模型列表。</string>
+    <string name="ai_error_transport">无法经隧道访问 Google。</string>
+    <string name="ai_error_protocol">无法解析 Google 的应答。</string>
+    <string name="ai_error_blocked">Gemini 拒绝回答这个问题。</string>
+
+    <!-- small print -->
+    <string name="ai_privacy_title">什么会离开你的设备</string>
+    <string name="ai_privacy_body">只有请求必需的内容：你的提问、你所询问的设置项名称，以及当前的调节值。日志分析会额外附上日志的脱敏片段，凭据已剥离、公网地址掩码到 /16。所有内容都经隧道发往 Google，绝不直连。</string>
+    <string name="ai_scope_title">AI 可以改动什么</string>
+    <string name="ai_scope_body">只能改调节类选项：协议、混淆、MTU、分片、DNS、重连行为等。它永远无法修改网络后端、上游代理、路由规则、哪些应用走隧道，以及任何凭据——这些决定「哪些流量受保护」，所以始终留在你手里。</string>
+
+    <string name="ai_error_server">Google 的 AI 服务没有正常应答。问题在它们一侧，不在你的连接。</string>
+    <string name="ai_error_truncated">回答在结束前被截断了。请重试。</string>
+    <string name="ai_advisor_unreadable">模型连续两次没有按应用需要的格式回答。请重试，或换一个模型。</string>
+    <string name="ai_advisor_empty_log">连接日志里还没有可分析的内容。请先连接，再运行分析。</string>
+    <string name="ai_models_none_allowed">你的密钥能访问 Google，但本应用支持的任何模型都不可用。受支持的模型：\n%1$s</string>
+    <string name="ai_models_filtered">仅显示受支持的 Flash 模型</string>
+    <string name="ai_models_help">这里只列出在免费密钥上能稳定应答的快速 Flash 模型。默认是 Gemini 3.1 Flash-Lite，因为它的免费日额度最高；更新的 Flash 模型回答更快，但会更早触到日额度。图像、视频、音频与 Pro 模型均被隐藏。</string>
+    <string name="ai_model_desc_default">默认 · 日额度最高，适合日常持续使用</string>
+    <string name="ai_model_desc_fast">速度很快 · 更早触到免费日额度</string>
+    <string name="ai_model_desc_alt">Flash-Lite 系列 · 日额度较高（别名/预览版）</string>
+    <string name="ai_applied_dialog_title">已保存，下次连接生效</string>
+    <string name="ai_applied_dialog_body">新设置已保存，但隧道仍在用旧设置运行。隧道设置会在引擎启动时交给它，请断开后重新连接才会生效。</string>
+    <string name="ai_applied_dialog_ok">知道了</string>
+    <string name="ai_explain_ask_chat">没看懂？问问助手</string>
+    <string name="ai_chat_retry">重试</string>
+    <string name="ai_chat_edit">编辑</string>
+    <string name="ai_chat_delete">删除</string>
+    <string name="ai_chat_edited">已编辑</string>
+    <string name="ai_chat_cancel">取消</string>
+    <string name="ai_chat_edit_title">编辑消息</string>
+    <string name="ai_chat_edit_send">重新发送</string>
+    <string name="ai_chat_edit_note">这条消息之后的内容都会被移除，助手将回答修改后的问题。</string>
+    <string name="ai_chat_selected">已选 %1$d 条</string>
+    <string name="ai_chat_select_all">全选</string>
+    <string name="ai_chat_selection_cancel">取消选择</string>
+    <string name="ai_chat_delete_selected">删除所选</string>
+    <string name="ai_chat_delete_title">删除 %1$d 条消息？</string>
+    <string name="ai_chat_delete_body">此操作无法撤销。删除的消息不会再作为上下文发给助手。</string>
+    <string name="ai_chat_delete_confirm">删除</string>
+    <!-- Tor -->
+    <string name="protocol_mim">MASQUE×2</string>
+    <string name="state_tor_bootstrap">正在构建 Tor 链路…</string>
+    <string name="state_tor_bootstrap_pct">正在接入 Tor 网络… %1$d%%</string>
+    <string name="state_tor_bridges">Tor 正在被封锁——正在尝试网桥…</string>
+    <string name="err_tor_blocked">Tor 在 %1$d%% 处停滞，无法接入 Tor 网络。这正是「过滤 Tor 的网络」的样子。请在 设置 → Tor 中开启网桥，或改用 Aether → Tor 模式：此时 Tor 经隧道拨出，运营商既看不到也拦不住。</string>
+    <string name="err_tor_no_progress">引擎已启动，但 Tor 从未报告过向 Tor 网络推进的进度。请确认连接正常，然后试试 Aether → Tor 模式（在隧道内构建 Tor）。</string>
+    <string name="err_tor_no_stream">Tor 已接入网络，但无法通过它打开连接。请重试——若反复出现，请改用 Aether → Tor 模式。</string>
+    <string name="err_tor_bootstrap">Tor 未能在时限内接入 Tor 网络。在封锁 Tor 的网络上，请使用 Aether → Tor 模式：连接在隧道内建立，无法被阻断。</string>
+    <string name="backend_help_tor">只用 Tor，不经 Aether 隧道。出口是 Tor 出口节点，流量经过三跳中继，是最慢也最私密的模式。此模式要求 Tor 自行接入 Tor 网络，因此被封锁时会使用网桥。</string>
+    <string name="backend_help_aether_tor">两跳：先由 Aether 连接，再在该隧道内部构建 Tor。你所在的网络只看到 Aether 的混淆传输，永远看不到 Tor——所以这是 Tor 被封锁时该用的模式。出口是 Tor 出口节点。</string>
+    <string name="backend_help_tor_psiphon">三跳：先 Tor，再由 Tor 拨出 Psiphon。出口 IP 是 Psiphon 的，但从 Tor 地址到达，因此封锁 Tor 出口节点的站点又能打开，而你自己的地址仍藏在 Tor 之后。最慢的模式。</string>
+    <string name="exit_help_tor">Tor 自行选择出口节点，且每条链路都会换一个。任何设置都无法把它固定到某个国家。</string>
+    <string name="section_tor">Tor</string>
+    <string name="tor_bridges_title">网桥</string>
+    <string name="tor_bridges_desc">Tor 被封锁时如何接入网络。</string>
+    <string name="tor_bridges_not_needed">此模式不需要：Tor 经 Aether 隧道拨出，你所在的网络根本看不到它。</string>
+    <string name="tor_bridges_auto">自动</string>
+    <string name="tor_bridges_always">始终</string>
+    <string name="tor_bridges_off">关闭</string>
+    <string name="tor_bridge_lines_title">自定义网桥行</string>
+    <string name="tor_bridge_lines_hint">obfs4 192.0.2.55:38114 &lt;FINGERPRINT&gt; cert=… iat-mode=0</string>
+    <string name="tor_bridge_lines_desc">每行一条，格式与 bridges.torproject.org 给出的一致。留空则使用应用为你所在国家获取的网桥。应用未内置的传输方式所对应的行会被忽略。</string>
+    <string name="tor_group_footer">Tor 只承载 TCP——在所有应用、所有平台上都是如此。Aether 在 Tor 内部用 TCP 应答 DNS 并丢弃其他 UDP，因此支持 QUIC 的应用会退回 TCP。这是正常现象，也没有任何泄漏：被丢弃的 UDP 哪儿都去不了，更不会绕过 Tor。延迟会明显升高，首次连接也需要等一会儿——Tor 要先下载目录才能构建链路。</string>
+
+    <string name="backend_help_tor_aether">反向链路：先 Tor，再在其内部构建 Aether 隧道。出口是 WARP 地址——与纯 Aether 相同——但你所在的网络只看到 Tor，甚至无法判断存在 VPN 隧道。适用于 Cloudflare/WARP 本身被封、被限速而 Tor 仍能通过的地方。与 Tor 出口模式不同，它承载普通 UDP。</string>
+    <string name="protocol_forced_reverse">此模式固定为 MASQUE over HTTP/2。Tor 只承载 TCP，而 WARP 的 WireGuard 端点只应答 UDP，因此引擎在这里拒绝 WireGuard 与 WARP×2。</string>
+
+    <string name="tor_country_title">网桥国家</string>
+    <string name="tor_country_auto">自动检测</string>
+    <string name="tor_country_desc">bridgedb 按哪个国家下发网桥。检测会向网络询问你的位置，而这正是此处最容易失败的请求。</string>
+    <string name="tor_direct_secs_title">直连耐心时长</string>
+    <string name="tor_direct_auto">自动（75 秒）</string>
+    <string name="tor_direct_secs_value">%1$d 秒</string>
+    <string name="tor_direct_secs_desc">Tor 在回退到网桥之前尝试直连路径的时长。若此处 Tor 确定被封，可以调短。</string>
+    <string name="tor_check_title">可达性检查</string>
+    <string name="tor_check_hint">check.torproject.org:443</string>
+    <string name="tor_check_desc">引导完成前 Tor 必须能访问的地址。仅当 Tor 看起来正常却总在引导阶段失败时才改动——默认目标在某些网络上本身就被封锁。</string>
+
+    <!-- Zero Trust e-mail login code -->
+    <string name="zt_code_title">输入登录验证码</string>
+    <string name="zt_code_body">你的组织已向 %1$s 发送一次性验证码。在此输入以完成加入。</string>
+    <string name="zt_code_body_noaddr">你的组织已向你发送一次性验证码。在此输入以完成加入。</string>
+    <string name="zt_code_retry">该验证码未被接受。第 %1$d 次尝试，共 %2$d 次。</string>
+    <string name="zt_code_label">登录验证码</string>
+    <plurals name="zt_code_wait">
+        <item quantity="one">连接正在等待它。%1$d 秒后将放弃。</item>
+        <item quantity="other">连接正在等待它。%1$d 秒后将放弃。</item>
+    </plurals>
+    <string name="zt_code_send">发送验证码</string>
+    <string name="zt_code_dismiss">以后再说</string>
+
+    <!-- Zero Trust enrolment token -->
+    <string name="access_token_how">在浏览器中登录 https://&lt;team&gt;.cloudflareaccess.com/warp，复制 token= 之后的取值并粘贴到这里。或者选择上方的「邮箱验证码」，直接在应用内登录。</string>
+    <string name="access_token_bad">这看起来不像一个令牌。请复制注册页面上 token= 之后的完整取值。</string>
+    <string name="access_token_expired">该令牌已过期。请重新登录并粘贴一个新的。</string>
+    <plurals name="access_token_ok">
+        <item quantity="one">令牌看起来有效，%1$d 天后过期。</item>
+        <item quantity="other">令牌看起来有效，%1$d 天后过期。</item>
+    </plurals>
+    <string name="access_token_ok_soon">令牌看起来有效，但不到一天就会过期。</string>
+    <string name="access_token_nodate">令牌看起来有效，其中没有到期日期。</string>
+
+    <!-- Which Zero Trust sign-in methods actually work -->
+    <string name="team_auth_email_note">连接前先在下方登录，连接过程就无需你介入。若不登录，验证码会在连接时索取：组织发送邮件并弹出对话框。届时请保持应用在前台——连接最多等待五分钟。</string>
+    <string name="team_auth_service_note">无需你介入：引擎自行用客户端 ID 与密钥换取令牌。</string>
+
+    <!-- Free MTU entry -->
+    <string name="mtu_custom_label">或直接输入 MTU</string>
+    <string name="mtu_custom_help">1280 到 9000 之间的任意值。若某些站点或 Telegram 在隧道正常时卡顿，就把它调小。</string>
+    <string name="mtu_custom_range">请输入 %1$d 到 %2$d 之间的数字。</string>
+
+    <!-- Battery optimisation hint -->
+    <string name="battery_title">允许后台运行</string>
+    <string name="battery_desc">Android 仍有权挂起 Aether。屏幕一关隧道就断、它却仍显示已连接却什么都加载不出来，就是这个原因。轻点以为它解除限制。</string>
+
+    <!-- Custom ECHConfigList -->
+    <string name="ech_config_label">ECHConfigList（base64，可选）</string>
+    <string name="ech_config_help">留空则由引擎自行获取。粘贴一个 base64 编码的 ECHConfigList 即可改用你提供的值——当你的网络恰好封锁的是「获取默认值」这一步时很有用。像 v2rayNG 那样指定其他域名需要改动引擎，这里做不到。</string>
+    <!-- About feature lists -->
+    <string-array name="about_original_features">
+        <item>自动发现端点，并进行端到端数据面校验</item>
+        <item>MASQUE（HTTP/3 与 HTTP/2），可选 TLS ClientHello 分片</item>
+        <item>WireGuard 与嵌套 WireGuard（WARP-in-WARP \"gool\"）</item>
+        <item>面向高强度 DPI 网络的流量混淆</item>
+        <item>自动重连，并可快速重连到上一个可用网关</item>
+        <item>本地 SOCKS5 代理——用于 Linux、Windows、macOS 与 Android（Termux）的 CLI</item>
+    </string-array>
+
+    <string-array name="about_port_improvements">
+        <item>新增 Aether → Psiphon 链式传输——在 Aether 的混淆首跳之后拥有真正的境外出口 IP</item>
+        <item>链式模式修正了纯 Aether 给出的伊朗出口地址，并能让拒绝该地址的 AI 服务（Gemini 等）重新可用</item>
+        <item>为链式模式提供带国旗的出口国家选择器，并加入支持 UDP 的 SOCKS 前端，让 DNS 与 QUIC 也能穿过它</item>
+        <item>完整的 Android 原生应用——上游只有 CLI（没有 Android 或 Windows 界面）</item>
+        <item>通过 Android VpnService 一键全局 VPN——无需手动设置代理</item>
+        <item>内嵌 hev-socks5-tunnel（tun2socks），在原生线程中进程内运行</item>
+        <item>实时的「你的 IP / 服务器 IP」徽标，多提供商地理定位</item>
+        <item>分步连通性自检，崩溃后仍保留的诊断日志</item>
+        <item>带退避的自动重连，并按扫描模式设置连接超时</item>
+        <item>Material 3 界面中的协议、扫描模式与 IP 版本控制（English + فارسی）</item>
+        <item>快捷设置磁贴——直接从通知栏连接/断开</item>
+        <item>通过 Wi-Fi/热点共享 VPN——内置 HTTP + SOCKS5 代理，供笔记本与其他手机使用</item>
+        <item>从主界面即可进入高级设置</item>
+        <item>由 GitHub Actions 自动发布按 ABI 签名的分架构 APK</item>
+        <item>在「关于」中显示引擎版本，内置内核始终可核验</item>
+        <item>Zero Trust（面向组织的 WARP）、分流路由规则，以及自定义隧道内 DNS</item>
+    </string-array>
+
+    <string name="meta_pipeline">连接</string>
+
+    <string name="state_smart_plus_racing">正在同时尝试多条线路…</string>
+
+    <string name="protocol_auto_race">智能模式会在这里同时尝试两条线路，并记住哪一条在此网络可用，所以下次连接更快。</string>
+    <string name="protocol_auto_ladder">在此后端，智能模式会逐条尝试线路。竞速需要纯 Aether 后端与自动端点选择。</string>
+
+    <!-- VPN sharing rewrite -->
+    <string name="share_status_live">共享已生效 · %1$d 个连接</string>
+    <string name="share_off_hint">打开共享并选择模式后，需在其他设备上填写的地址就会显示在这里。</string>
+    <string name="share_mode_title">共享模式</string>
+    <string name="share_mode_home">家庭 Wi-Fi</string>
+    <string name="share_mode_home_desc">手机与同一路由器下的设备</string>
+    <string name="share_mode_mobile">移动热点</string>
+    <string name="share_mode_mobile_desc">其他设备连接本机热点（移动数据）</string>
+    <string name="share_mode_detected">● 已检测到网络</string>
+    <string name="share_mode_not_detected">○ 未启用</string>
+    <string name="share_needs_reconnect">本次会话启动时你的「直连（绕过）」路由规则是生效的。为确保不发生 IP 泄漏，局域网共享保持关闭：请断开后重新连接（共享期间规则会自动暂停）。</string>
+    <string name="share_port_busy">端口 10810/10811 已被本网络上的其他应用占用。请关闭它后重新切换共享。</string>
+    <string name="share_wait_home">请把本机连接到家庭 Wi-Fi。地址会自动显示在这里。</string>
+    <string name="share_wait_mobile">请在本机开启 Wi-Fi 热点（或 USB/蓝牙网络共享）。地址会自动显示在这里。</string>
+    <string name="share_open_hotspot">打开热点设置</string>
+    <string name="share_switch_to_mobile">改用移动热点模式</string>
+    <string name="share_switch_to_home">改用家庭 Wi-Fi 模式</string>
+    <string name="share_zero_leak_on">零泄漏守护已启用</string>
+    <string name="share_zero_leak_desc">其他设备经共享发出的所有内容只从 VPN 隧道离开：DNS 在隧道内解析，UDP 经隧道中转，本地/私有目标被阻断，隧道一旦断开连接就直接失败而不是改走直连。</string>
+    <string name="share_direct_paused">共享期间你的「直连（绕过）」规则已暂停，因此任何内容都无法从隧道之外离开。</string>
+    <string name="share_values_home">请在另一台设备上填写（同一 Wi-Fi）</string>
+    <string name="share_values_mobile">请在连接到本热点的设备上填写</string>
+    <string name="share_ip_label">手机 IP 地址</string>
+    <string name="share_pac_label">自动代理（PAC）地址 — 最省事，失败即阻断</string>
+    <string name="share_copy_all">复制全部信息</string>
+    <string name="share_copy_all_label">Aether 共享信息</string>
+    <string name="share_copied_all">已复制全部信息</string>
+    <string name="share_steps_title">如何连接</string>
+    <string name="share_step_home_1">确认另一台设备与本机连在同一个 Wi-Fi 上。</string>
+    <string name="share_step_mobile_1">把另一台设备连接到本机热点。</string>
+    <string name="share_step_common_proxy">在其 Wi-Fi / 网络设置中选择「代理 → 自动」并粘贴 PAC 地址（或选择「手动」并填 HTTP 代理）。对于应用与 TUN 客户端（v2rayN、NekoBox、sing-box），请使用 SOCKS5 地址并开启远程 DNS。</string>
+    <string name="share_step_common_check">用浏览器打开下方的检查页面：只有在设备受保护时它才能打开。</string>
+    <string name="share_check_label">保护检查页面</string>
+    <string name="share_warning_unconfigured">只有发往共享的流量才受保护。没有设置为使用它的设备或应用会走自己的连接——Android 不允许应用强制把网络共享的设备拉进 VPN。</string>
+    <string name="share_auth_toggle">需要用户名与密码</string>
+    <string name="share_auth_toggle_desc">可选。设备必须先登录才能使用共享。</string>
+    <string name="share_auth_toggle_desc_home">可选——在共享或公共 Wi-Fi 上建议开启。设备必须先登录才能使用共享。</string>
+    <string name="share_auth_edit">编辑</string>
+    <string name="share_auth_edit_title">共享用户名与密码</string>
+    <string name="share_auth_bad_user">用户名：1–64 个拉丁字符，不能含空格或“:”。</string>
+    <string name="share_auth_short_pass">密码至少需要 %1$d 个拉丁字符。</string>
+    <string name="share_auth_saved">凭据已保存</string>
+    <string name="share_auth_save">保存</string>
+    <string name="share_auth_cancel">取消</string>
+
+    <string name="share_other_addresses">也可通过这些链路访问（用设备当前所连的那一条）</string>
+    <string name="share_iface_hotspot">Wi-Fi 热点地址</string>
+    <string name="share_iface_usb">USB / 以太网共享地址</string>
+    <string name="share_iface_bt">蓝牙共享地址</string>
+    <string name="share_iface_wifi">Wi-Fi 地址</string>
+    <string name="share_iface_eth">以太网地址</string>
+    <string name="share_webrtc_title">WebRTC（浏览器中的真实 IP 泄漏）</string>
+    <string name="share_webrtc_desc">设置了代理的浏览器仍会用自身连接发送 WebRTC，这可能暴露设备的真实 IP。请在另一台设备上打开下方的设置页面：它会实时检测 WebRTC，并为 Chrome、Edge、Brave 与 Firefox 提供一键锁定。手机端：用 v2rayNG / NekoBox 的 VPN 模式配合 SOCKS5 地址。</string>
+    <string name="share_setup_label">设置页面 + WebRTC 测试（在另一台设备上打开）</string>
+
+    <!-- Zero Trust: sign in first, then connect -->
+    <string name="zt_need_team">请先在上方填写团队名称，才能登录或查看本机是否已是成员。</string>
+    <string name="zt_checking">正在检查本机的成员身份…</string>
+    <string name="zt_enrolled">本机已是 %1$s 的成员，连接无需登录。</string>
+    <string name="zt_forget">移除本机的成员身份</string>
+    <string name="zt_forget_desc">仅删除为这个团队保存的成员身份。下次连接会重新加入。组织已移除本机、或想以他人身份加入时使用。</string>
+    <string name="zt_forget_title">移除成员身份？</string>
+    <string name="zt_forget_body">本机在 %1$s 中保存的身份将被删除，下次连接会以新设备身份重新加入组织。个人版 WARP 与其他团队不受影响。此操作无法撤销。</string>
+    <string name="zt_forget_ok">移除</string>
+    <string name="zt_forget_done">成员身份已移除。下次连接会重新加入。</string>
+    <string name="zt_forget_busy">请先断开连接：运行中的隧道正在使用这个成员身份。</string>
+    <string name="zt_disconnect_first">请断开连接后再登录或更改成员身份。</string>
+    <string name="zt_cancel">取消</string>
+    <string name="zt_token_pending">还不是成员。下次连接会用上方的注册令牌加入。</string>
+    <string name="zt_service_pending">还不是成员。下次连接会用上方的服务令牌自动加入，无需你介入。</string>
+
+    <string name="zt_signin_none">尚未登录。现在登录，连接时就不会停下来询问验证码。若跳过，验证码会在连接过程中索取。</string>
+    <string name="zt_signin_other">已保存的登录属于团队 %2$s 中的 %1$s，与上面的地址和团队不符，因此不会被使用：请重新登录。</string>
+    <string name="zt_signin_expired">你的登录已过期。请在连接前重新登录，否则验证码会在连接过程中索取。</string>
+    <string name="zt_signin_ready">已以 %1$s 登录。下次连接会自动加入本机，不再询问验证码。</string>
+    <plurals name="zt_signin_left_minutes">
+        <item quantity="one">登录还有 %1$d 分钟有效：请在此之前连接。</item>
+        <item quantity="other">登录还有 %1$d 分钟有效：请在此之前连接。</item>
+    </plurals>
+    <plurals name="zt_signin_left_hours">
+        <item quantity="one">登录还有 %1$d 小时有效。</item>
+        <item quantity="other">登录还有 %1$d 小时有效。</item>
+    </plurals>
+    <plurals name="zt_signin_left_days">
+        <item quantity="one">登录还有 %1$d 天有效。</item>
+        <item quantity="other">登录还有 %1$d 天有效。</item>
+    </plurals>
+    <string name="zt_signin_left_soon">登录不到一分钟就会过期。</string>
+    <string name="zt_signin_left_nodate">该登录没有到期日期。</string>
+    <string name="zt_signin">登录</string>
+    <string name="zt_signin_again">重新登录</string>
+    <string name="zt_signin_desc">你的组织会向上述地址发送一次性验证码，你在这里输入，结果会加密保存在本机供下次连接使用。</string>
+    <string name="zt_signin_need_email">请先在上方填写工作邮箱。</string>
+    <string name="zt_signout">忘记本次登录</string>
+    <string name="zt_signout_desc">从本机删除已保存的登录。本机已获得的成员身份不受影响。</string>
+    <string name="zt_signed_in">已登录。现在连接即可加入组织。</string>
+    <string name="zt_signed_out">登录信息已清除。</string>
+
+    <string name="zt_dlg_title">登录到 %1$s</string>
+    <string name="zt_dlg_sending">正在请求你的组织向 %1$s 发送验证码…</string>
+    <string name="zt_dlg_code_body">一次性验证码已发送至 %1$s。在此输入以登录。</string>
+    <string name="zt_dlg_rejected">该验证码未被接受。第 %1$d 次尝试，共 %2$d 次。</string>
+    <string name="zt_dlg_exhausted">这个验证码也没被接受。请获取新验证码后重试。</string>
+    <string name="zt_dlg_resent">新验证码正在发送。只有最新的验证码有效。</string>
+    <string name="zt_dlg_verifying">正在校验验证码…</string>
+    <string name="zt_dlg_resending">正在请求新验证码…</string>
+    <string name="zt_dlg_confirm">登录</string>
+    <string name="zt_dlg_resend">发送新验证码</string>
+    <plurals name="zt_dlg_resend_wait">
+        <item quantity="one">%1$d 秒后可获取新验证码</item>
+        <item quantity="other">%1$d 秒后可获取新验证码</item>
+    </plurals>
+    <string name="zt_dlg_retry">重试</string>
+    <string name="zt_dlg_close">关闭</string>
+
+    <string name="zt_err_team">团队名称无效。只填名称，例如 acme。</string>
+    <string name="zt_err_email">该邮箱地址不完整。</string>
+    <string name="zt_err_no_otp">该组织不支持邮箱验证码登录。请询问其管理员，或改用服务令牌 / 注册令牌。</string>
+    <string name="zt_err_refused">Cloudflare 拒绝了该请求（HTTP %1$d）。请检查团队名称，以及该地址是否被允许加入。</string>
+    <string name="zt_err_no_nonce">验证码已发送，但 Cloudflare 的应答缺少登录所需的内容。请重试；若一直如此，说明登录页面已经变更。</string>
+    <string name="zt_err_network">无法访问 %1$s（%2$s）。请检查网络后重试。如果 Cloudflare 只能经你的上游代理访问，请跳过这里的登录：连接过程中索取的验证码会走那个代理。</string>
+    <string name="zt_err_expired_on_arrival">Cloudflare 签发的令牌到手时已经过期。请检查手机的日期与时间是否正确，然后重新登录。</string>
+    <string name="zt_err_store">已登录，但本机无法安全保存结果，因此没有保存任何内容。</string>
+
+    <string name="zt_svc_test">测试服务令牌</string>
+    <string name="zt_svc_test_desc">完全按照引擎连接时的做法，向你的组织申请一个注册令牌。不会保存任何内容。</string>
+    <string name="zt_svc_need_both">请先填写客户端 ID 与客户端密钥。</string>
+    <string name="zt_svc_testing">正在测试…</string>
+    <string name="zt_svc_ok">已接受：组织已为该服务令牌签发注册令牌。</string>
+    <string name="zt_svc_no_token">未被接受（HTTP %1$d）。请检查客户端 ID 与密钥，以及该服务令牌是否被允许注册设备（Service Auth）。</string>
+    <!-- gool mode, TLS fingerprint -->
+    <string name="gool_mode_title">Gool 模式</string>
+    <string name="gool_mode_modern">现代（基于 MASQUE）</string>
+    <string name="gool_mode_classic">经典（基于 WireGuard）</string>
+    <string name="gool_mode_modern_desc">引擎默认：一条承载于 MASQUE 之内的 WireGuard WARP 隧道，其身份在 WARP 内部注册，因此你会从境外位置离开。</string>
+    <string name="gool_mode_classic_desc">较早的 gool（--gool-classic）：WireGuard 套在 WireGuard 里。如果现代模式在你的网络连不上，就用它。</string>
+    <string name="cat_group_tls">TLS 指纹</string>
+    <string name="tls_ciphers_label">TLS 1.2 加密套件</string>
+    <string name="tls_ciphers_help">留空则使用推荐默认值（Chrome 的列表，见上方）。否则填写 BoringSSL 名称，用“:”分隔，例如 ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256。出现未知名称会让引擎在启动时停止。</string>
+    <string name="disable_grease_title">禁用 GREASE</string>
+    <string name="disable_grease_desc">从 TLS 握手中去掉 GREASE 值。关闭此项则保持与 Chrome 一致。</string>
+    <string name="tls_group_footer">作用于 MASQUE over HTTP/2、WARP API 调用与 ECH 查询。HTTP/3（QUIC）只提供 TLS 1.3，因此不列出 TLS 1.2 加密套件。</string>
+
+    <!-- custom configs -->
+    <string name="cc_title">自定义配置</string>
+    <string name="cc_nav_desc">你自己的 V2Ray/Xray 与 NapsternetV 配置，可单独使用，也可与 Aether、Psiphon、Tor 串联</string>
+    <string name="cc_off">关闭</string>
+    <string name="cc_enable">使用自定义配置</string>
+    <string name="cc_enable_desc">开启：下次连接会在下方链路中运行「%1$s」</string>
+    <string name="cc_enable_need">请先在下方导入并选择一个配置</string>
+    <string name="cc_chain_title">链路</string>
+    <string name="cc_chain_desc">配置在路径中的位置，按流量离开手机的顺序排列</string>
+    <string name="cc_chain_footer">单层：只用该配置。双层与三层：配置放在内置引擎前面（引擎通过它拨号），或放在引擎出口之后（通过引擎拨号到该配置）。协议、出口国家、Tor 网桥等引擎设置对引擎各跳依然有效。</string>
+    <string name="cc_config_word">配置</string>
+    <string name="cc_hops_single">单层 · 只用该配置</string>
+    <string name="cc_hops_double">双层链</string>
+    <string name="cc_hops_triple">三层链</string>
+    <string name="cc_group_import">添加配置</string>
+    <string name="cc_import_paste">链接或文本</string>
+    <string name="cc_import_paste_desc">vless、vmess、trojan、ss、socks、wireguard、npvt 链接，Xray JSON 或订阅地址</string>
+    <string name="cc_import_file">导入文件</string>
+    <string name="cc_import_file_desc">.npvt、.txt、.json 或二维码图片</string>
+    <string name="cc_import_camera">扫描二维码</string>
+    <string name="cc_import_camera_desc">使用相机</string>
+    <string name="cc_import_image">从图片识别二维码</string>
+    <string name="cc_import_image_desc">截图或已保存的图片</string>
+    <string name="cc_import_action">导入</string>
+    <string name="cc_paste_hint">粘贴一个或多个链接、一份 JSON 配置或一个订阅地址</string>
+    <string name="cc_paste_clipboard">从剪贴板粘贴</string>
+    <string name="cc_scan_prompt">把相机对准配置二维码</string>
+    <string name="cc_imported">已添加 %1$d 个配置</string>
+    <string name="cc_import_failed">导入失败：%1$s</string>
+    <string name="cc_qr_none">没有找到二维码</string>
+    <string name="cc_password_title">密码</string>
+    <string name="cc_password_desc">这个 NapsternetV 配置受密码保护。请输入作者给你的密码。</string>
+    <string name="cc_password_wrong">密码错误，请重试。</string>
+    <string name="cc_group_saved">已保存的配置（%1$d）</string>
+    <string name="cc_empty">还没有配置。请在上方添加。</string>
+    <string name="cc_saved_footer">点按配置即可使用。配置在本机加密保存。被锁定的 NapsternetV 配置会隐藏服务器信息：可以使用、串联、重命名和删除，但无法查看、编辑或复制。</string>
+    <string name="cc_locked">已锁定</string>
+    <string name="cc_locked_desc">已被作者锁定：服务器信息被隐藏。</string>
+    <string name="cc_badge_expired">已过期</string>
+    <string name="cc_badge_mobile">仅限移动数据</string>
+    <string name="cc_more">更多</string>
+    <string name="cc_action_use">使用此配置</string>
+    <string name="cc_action_edit">编辑</string>
+    <string name="cc_action_rename">重命名</string>
+    <string name="cc_action_copy">复制链接</string>
+    <string name="cc_action_delete">删除</string>
+    <string name="cc_edit_title">编辑配置</string>
+    <string name="cc_name">名称</string>
+    <string name="cc_save">保存</string>
+    <string name="cc_delete_title">删除配置？</string>
+    <string name="cc_delete_body">「%1$s」将从本机移除。</string>
+    <string name="cc_delete_all">删除全部配置</string>
+    <string name="cc_delete_all_body">所有已保存的自定义配置都将从本机移除。</string>
+    <string name="cc_paste_empty">剪贴板里没有可粘贴的文本</string>
+    <string name="cc_ping_all">测试所有配置的延迟</string>
+    <string name="cc_ping_all_desc">真实延迟：经每个配置各发一次请求</string>
+    <string name="cc_ping_running">正在测试…</string>
+    <string name="cc_ping_one">测试延迟</string>
+    <string name="cc_ping_ms">%1$d 毫秒</string>
+    <string name="cc_ping_offline">离线 / 服务器不可达</string>
+    <string name="cc_ping_blocked">被过滤</string>
+    <string name="cc_ping_noreply">无响应</string>
+    <string name="cc_ping_invalid">配置无效</string>
+    <string name="cc_ping_nonet">无网络</string>
+    <string name="cc_ping_footer">这里的延迟是真实的时延测量，与 v2rayNG 相同：每个配置都会像直连一样在内置 Xray 核心里运行，并通过它发送一次请求（generate_204）。这个数字就是该请求的耗时，含握手。带不动流量的配置会报告 -1，并给出原因：「离线 / 服务器不可达」——服务器域名无法解析或端口被关闭；「被过滤」——网络丢弃或重置了到服务器的连接（把它串在 Aether 或 Tor 之后可能有帮助）；「无响应」——服务器接受连接但配置没能承载流量（已过期、密钥或用户错误，或协议被封）；「配置无效」——Xray 核心拒绝该配置。</string>
+    <string name="cc_err_psiphon_direct">Psiphon 无法从这里访问到它自己的网络，因此没有东西可以交给这个配置。在这个网络上请改用另一个方向（配置 → Psiphon）：在那里由 Psiphon 通过你的配置拨号。</string>
+    <string name="cc_err_expired">该自定义配置已过期（作者设定了到期日期）。</string>
+    <string name="cc_err_mobile_only">该自定义配置只能在移动数据下使用。</string>
+    <string name="cc_err_no_core">本构建未包含自定义配置所需的 Xray 核心。</string>
+    <string name="cc_err_unreachable">自定义配置无法访问互联网。请检查配置，或换一条链路。</string>
+    <string name="cc_err_core_failed">自定义配置（Xray 核心）已停止。请检查配置后重新连接。</string>
+
+    <!-- announcements / What's new archive -->
+    <string name="announcements_title">消息与公告</string>
+    <string name="announcements_desc">随时查看本版本的新变化与连接指南</string>
+    <string name="announcements_version">版本 %1$s</string>
+    <string name="announcements_footer">每条更新消息都保存在这里。点按一条即可再次阅读。</string>
+</resources>

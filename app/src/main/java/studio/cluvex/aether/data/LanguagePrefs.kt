@@ -12,7 +12,7 @@ import android.view.View
 import java.util.Locale
 
 /**
- * The three states of the in-app language switch.
+ * The four states of the in-app language switch.
  *
  * [SYSTEM] is not "English": it means the app keeps following the phone, which
  * is what every build before this one did unconditionally.
@@ -20,6 +20,7 @@ import java.util.Locale
 enum class AppLanguage(val tag: String) {
     SYSTEM(""),
     ENGLISH("en"),
+    CHINESE("zh"),
     PERSIAN("fa"),
     ;
 

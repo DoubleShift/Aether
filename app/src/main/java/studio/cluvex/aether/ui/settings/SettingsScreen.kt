@@ -1774,6 +1774,7 @@ private fun torBridgesLabel(bridges: TorBridges): String = when (bridges) {
 private fun languageLabel(language: AppLanguage): String = when (language) {
     AppLanguage.SYSTEM -> stringResource(R.string.language_system)
     AppLanguage.ENGLISH -> stringResource(R.string.language_english)
+    AppLanguage.CHINESE -> stringResource(R.string.language_chinese)
     AppLanguage.PERSIAN -> stringResource(R.string.language_persian)
 }
 

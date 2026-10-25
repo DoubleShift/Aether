@@ -349,6 +349,7 @@
     <string name="language_desc">Applies to the whole app, including the notification, the Quick Settings tile and the home-screen widget. Persian switches the layout right to left.</string>
     <string name="language_system">Follow the phone</string>
     <string name="language_english">English</string>
+    <string name="language_chinese">Chinese (Simplified)</string>
     <string name="language_persian">فارسی</string>
 
     <string name="reset_confirm_title">Reset all settings?</string>

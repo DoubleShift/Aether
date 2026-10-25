@@ -341,6 +341,7 @@
     <string name="language_desc">روی کل برنامه اعمال می‌شود؛ شامل نوتیفیکیشن، تایل تنظیمات سریع و ویجت صفحهٔ اصلی. فارسی چیدمان را راست‌چین می‌کند.</string>
     <string name="language_system">پیروی از گوشی</string>
     <string name="language_english">⁨English⁩</string>
+    <string name="language_chinese">Chinese (Simplified)</string>
     <string name="language_persian">فارسی</string>
 
     <string name="reset_confirm_title">همهٔ تنظیمات بازنشانی شود؟</string>

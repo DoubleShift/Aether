@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="README.md">🇬🇧 English</a> · <a href="README.fa.md">🇮🇷 فارسی</a>
+  <a href="README.md">🇬🇧 English</a> · <a href="README.fa.md">🇮🇷 فارسی</a> · <a href="README.zh-CN.md">🇨🇳 简体中文</a>
 </p>
 
 <p align="center">
@@ -59,7 +59,7 @@ NapsternetV configs run in a bundled Xray-core, alone or chained with the engine
 ## Features
 
 - **Material You dark UI** (Jetpack Compose) with dynamic colour on Android 12+,
-  English and Persian with automatic RTL.
+  English, Simplified Chinese and Persian with automatic RTL.
 - **Six engine modes:** Aether, `Aether → Psiphon`, Tor, `Aether → Tor`,
   `Tor → Psiphon`, `Tor → Aether`.
 - **Custom configs:** VLESS, VMess, Trojan, Shadowsocks, SOCKS, WireGuard and
